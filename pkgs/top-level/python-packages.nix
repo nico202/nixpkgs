@@ -6564,6 +6564,12 @@ let
       sha256 = "0cds7yvwdlqmd590i59vzxaviwxk4js6dkhnmdxb3p1xac7wmq9s";
     };
 
+    patchPhase = ''
+      substituteInPlace libev/ev.c --replace \
+        "ecb_inline void ecb_unreachable (void) ecb_noreturn" \
+        "ecb_inline ecb_noreturn void ecb_unreachable (void)"
+    '';
+
     buildInputs = with self; [ pkgs.libev ];
     propagatedBuildInputs = optionals (!isPyPy) [ self.greenlet ];
 
@@ -17131,6 +17137,24 @@ let
 
   };
 
+  veryprettytable = pythonPackages.buildPythonPackage rec {
+    name = "veryprettytable-${version}";
+    version = "0.8.1";
+
+    src = pkgs.fetchurl {
+      url = "https://pypi.python.org/packages/source/v/veryprettytable/${name}.tar.gz";
+      sha256 = "1k1rifz8x6qcicmx2is9vgxcj0qb2f5pvzrp7zhmvbmci3yack3f";
+    };
+
+    propagatedBuildInputs = [ self.termcolor self.colorama ];
+
+    meta = {
+      description = "A simple Python library for easily displaying tabular data in a visually appealing ASCII table format";
+      homepage = https://github.com/smeggingsmegger/VeryPrettyTable;
+      license = licenses.free;
+    };
+  };
+
   graphite_web = buildPythonPackage rec {
     name = "graphite-web-${version}";
     version = "0.9.12";
@@ -17955,7 +17979,6 @@ let
 
   termcolor = buildPythonPackage rec {
     name = "termcolor-1.1.0";
-    disabled = ! isPy27;
 
     src = pkgs.fetchurl {
       url = "https://pypi.python.org/packages/source/t/termcolor/termcolor-1.1.0.tar.gz";
@@ -18300,12 +18323,12 @@ let
   };
 
   neovim = buildPythonPackage rec {
-    version = "0.0.36";
+    version = "0.0.38";
     name = "neovim-${version}";
 
     src = pkgs.fetchurl {
       url = "https://pypi.python.org/packages/source/n/neovim/${name}.tar.gz";
-      md5 = "8cdad23402e29c7c5a1e85770e976edf";
+      md5 = "8b723417d3bf15bab0b245d080d45298";
     };
 
     propagatedBuildInputs = with self; [ msgpack ]

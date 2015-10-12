@@ -2295,6 +2295,8 @@ let
 
   namazu = callPackage ../tools/text/namazu { };
 
+  nasty = callPackage ../tools/security/nasty { };
+
   nbd = callPackage ../tools/networking/nbd { };
 
   ndjbdns = callPackage ../tools/networking/ndjbdns { };
@@ -3107,6 +3109,8 @@ let
   privoxy = callPackage ../tools/networking/privoxy { };
 
   swaks = callPackage ../tools/networking/swaks { };
+
+  swiften = callPackage ../development/libraries/swiften { };
 
   t = callPackage ../tools/misc/t { };
 
@@ -4137,15 +4141,11 @@ let
 
   jikes = callPackage ../development/compilers/jikes { };
 
-  julia02 = callPackage ../development/compilers/julia/0.2.nix {
+  julia = callPackage ../development/compilers/julia {
+    gmp = gmp6;
     llvm = llvm_33;
-    suitesparse = suitesparse_4_2;
+    openblas = openblasCompat;
   };
-
-  julia03 = callPackage ../development/compilers/julia/0.3.nix {
-    llvm = llvm_33;
-  };
-  julia = julia03;
 
   lazarus = callPackage ../development/compilers/fpc/lazarus.nix {
     fpc = fpc;
@@ -6356,6 +6356,7 @@ let
 
   gmp4 = callPackage ../development/libraries/gmp/4.3.2.nix { }; # required by older GHC versions
   gmp5 = callPackage ../development/libraries/gmp/5.1.x.nix { };
+  gmp6 = callPackage ../development/libraries/gmp/6.x.nix { };
   gmp = gmp5;
   gmpxx = appendToName "with-cxx" (gmp.override { cxx = true; });
 
@@ -7827,6 +7828,8 @@ let
   pcre = callPackage ../development/libraries/pcre {
     unicodeSupport = config.pcre.unicode or true;
   };
+
+  pcre2 = callPackage ../development/libraries/pcre2 { };
 
   pdf2xml = callPackage ../development/libraries/pdf2xml {} ;
 
@@ -12052,6 +12055,7 @@ let
   mercurial = callPackage ../applications/version-management/mercurial {
     inherit (pythonPackages) curses docutils hg-git dulwich;
     inherit (darwin.apple_sdk.frameworks) ApplicationServices;
+    inherit (darwin) cf-private;
     guiSupport = false; # use mercurialFull to get hgk GUI
   };
 
@@ -12195,7 +12199,6 @@ let
         withLibdnssdCompat = true;
       };
       qt5 = qt54; # Mumble is not compatible with qt55 yet
-      celt = celt_0_7;
       jackSupport = config.mumble.jackSupport or false;
       speechdSupport = config.mumble.speechdSupport or false;
       pulseSupport = config.pulseaudio or false;
@@ -14270,12 +14273,16 @@ let
   # standard BLAS and LAPACK.
   openblasCompat = openblas.override { blas64 = false; };
 
+  openlibm = callPackage ../development/libraries/science/math/openlibm {};
+
+  openspecfun = callPackage ../development/libraries/science/math/openspecfun {};
+
   mathematica = callPackage ../applications/science/math/mathematica { };
   mathematica9 = callPackage ../applications/science/math/mathematica/9.nix { };
 
-  sage = callPackage ../applications/science/math/sage { };
-
   metis = callPackage ../development/libraries/science/math/metis {};
+
+  sage = callPackage ../applications/science/math/sage { };
 
   suitesparse_4_2 = callPackage ../development/libraries/science/math/suitesparse/4.2.nix { };
   suitesparse_4_4 = callPackage ../development/libraries/science/math/suitesparse {};
