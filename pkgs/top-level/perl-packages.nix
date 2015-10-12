@@ -88,10 +88,10 @@ let self = _self // overrides; _self = with self; {
   };
 
   aliased = buildPerlPackage rec {
-    name = "aliased-0.31";
+    name = "aliased-0.34";
     src = fetchurl {
-      url = "mirror://cpan/authors/id/O/OV/OVID/${name}.tar.gz";
-      sha256 = "0gxfqdddlq5g1b2zs99b251hz52z9ys4yni7j2p8gyk5zij3wm1s";
+      url = "mirror://cpan/authors/id/E/ET/ETHER/${name}.tar.gz";
+      sha256 = "1syyqzy462501kn5ma9gl6xbmcahqcn4qpafhsmpz0nd0x2m4l63";
     };
   };
 
@@ -418,12 +418,13 @@ let self = _self // overrides; _self = with self; {
   };
 
   Autodia = buildPerlPackage rec {
-    name = "Autodia-2.03";
+    name = "Autodia-2.14";
     src = fetchurl {
-      url = "http://www.aarontrevena.co.uk/opensource/autodia/download/${name}.tar.gz";
-      sha256 = "1pzp30lnqkip2yrmnyzrf62g08xwn751nf9gmwdxjc09daaihwaz";
+      url = "mirror://cpan/authors/id/T/TE/TEEJAY/${name}.tar.gz";
+      sha256 = "08pl5y18nsvy8ihfzdsbd8rz6a8al09wqfna07zdjfdyib42b0dc";
     };
-    propagatedBuildInputs = [ TemplateToolkit Inline InlineJava GraphViz ];
+    propagatedBuildInputs = [ TemplateToolkit Inline InlineJava GraphViz
+      XMLSimple DBI ];
 
     meta = {
       description = "AutoDia, create UML diagrams from source code";
@@ -461,11 +462,11 @@ let self = _self // overrides; _self = with self; {
     };
   };
 
-  autovivification = buildPerlPackage {
-    name = "autovivification-0.12";
+  autovivification = buildPerlPackage rec {
+    name = "autovivification-0.16";
     src = fetchurl {
-      url = mirror://cpan/authors/id/V/VP/VPIT/autovivification-0.12.tar.gz;
-      sha256 = "6ef8686766c63571389880e5d87a0ca1d46f7d127982e8ef38aca7568c44840c";
+      url = "mirror://cpan/authors/id/V/VP/VPIT/${name}.tar.gz";
+      sha256 = "1422kw9fknv7rbjkgdfflg1q3mb69d3yryszp38dn0bgzkqhwkc1";
     };
     meta = {
       homepage = http://search.cpan.org/dist/autovivification/;
@@ -496,11 +497,11 @@ let self = _self // overrides; _self = with self; {
     };
   };
 
-  BFlags = buildPerlPackage {
-    name = "B-Flags-0.13";
+  BFlags = buildPerlPackage rec {
+    name = "B-Flags-0.14";
     src = fetchurl {
-      url = mirror://cpan/authors/id/R/RU/RURBAN/B-Flags-0.13.tar.gz;
-      sha256 = "6d00f08681772d0abec3aeedb5584910a6df5ced230c1525403a1c7da42f1352";
+      url = "mirror://cpan/authors/id/R/RU/RURBAN/${name}.tar.gz";
+      sha256 = "07inzxvvf4bkl4iliys9rfdiz309nccpbr82a7g57bhcylj7qhzn";
     };
     meta = {
       description = "Friendlier flags for B";
@@ -541,11 +542,11 @@ let self = _self // overrides; _self = with self; {
     };
   };
 
-  bignum = buildPerlPackage {
-    name = "bignum-0.37";
+  bignum = buildPerlPackage rec {
+    name = "bignum-0.41";
     src = fetchurl {
-      url = mirror://cpan/authors/id/P/PJ/PJACKLAM/bignum-0.37.tar.gz;
-      sha256 = "9d2e035222d8b00d062959cb5ae491cb6ce80b7ea0ea8c05e53c415022e4f871";
+      url = "mirror://cpan/authors/id/P/PJ/PJACKLAM/${name}.tar.gz";
+      sha256 = "19bwz2yi2qf5lrhkkk8c320b5ixn0wl8662gmvq3gqzarngxf76l";
     };
     meta = {
       description = "Transparent BigNumber support for Perl";
@@ -578,11 +579,11 @@ let self = _self // overrides; _self = with self; {
     };
   };
 
-  boolean = buildPerlPackage {
-    name = "boolean-0.32";
+  boolean = buildPerlPackage rec {
+    name = "boolean-0.45";
     src = fetchurl {
-      url = mirror://cpan/authors/id/I/IN/INGY/boolean-0.32.tar.gz;
-      sha256 = "1icihm1cib90klfjrk069s7031n1c7xk3fmkr2bfxrwqda4di7jg";
+      url = "mirror://cpan/authors/id/I/IN/INGY/${name}.tar.gz";
+      sha256 = "18hrgldzwnhs0c0r8hxx6r05qvk9p7gwinjwcybixfs2h0n43ypj";
     };
     meta = {
       homepage = https://github.com/ingydotnet/boolean-pm/tree;
@@ -1966,11 +1967,11 @@ let self = _self // overrides; _self = with self; {
     };
   };
 
-  constant = buildPerlPackage {
-    name = "constant-1.27";
+  constant = buildPerlPackage rec {
+    name = "constant-1.33";
     src = fetchurl {
-      url = mirror://cpan/authors/id/S/SA/SAPER/constant-1.27.tar.gz;
-      sha256 = "0ari0jggiifz3q7vxb8nlcsc3g6bj8c0c0drsrphv0079c956i3l";
+      url = "mirror://cpan/authors/id/R/RJ/RJBS/${name}.tar.gz";
+      sha256 = "015my616h5l2fswh52x4dp3n007gk5lax83ww9q6cmzb610mv5kr";
     };
   };
 
@@ -1990,10 +1991,10 @@ let self = _self // overrides; _self = with self; {
   constantdefer = pkgs.perlPackages.constant-defer;
 
   constant-defer = buildPerlPackage rec {
-    name = "constant-defer-5";
+    name = "constant-defer-6";
     src = fetchurl {
       url = "mirror://cpan/authors/id/K/KR/KRYDE/${name}.tar.gz";
-      sha256 = "05fjw2n6liwlillrj3bkfm5fzxw1mcfbxrnk9m18vibx6yzf8pwq";
+      sha256 = "1ykgk0rd05p7kyrdxbv047fj7r0b4ix9ibpkzxp6h8nak0qjc8bv";
     };
   };
 
@@ -6232,11 +6233,11 @@ let self = _self // overrides; _self = with self; {
     };
   };
 
-  locallib = buildPerlPackage {
-    name = "local-lib-2.000014";
+  locallib = buildPerlPackage rec {
+    name = "local-lib-2.000017";
     src = fetchurl {
-      url = mirror://cpan/authors/id/H/HA/HAARG/local-lib-2.000014.tar.gz;
-      sha256 = "ae63356ab780c5a3aa46287b48daea748a3dd021d9b52dff8bf480b43787fa2b";
+      url = "mirror://cpan/authors/id/H/HA/HAARG/${name}.tar.gz";
+      sha256 = "05607zxpb0jqvxn0cw064pnwsvbajw7k2pmzlisffadihg11m6ps";
     };
     meta = {
       description = "Create and use a local lib/ for perl modules with PERL5LIB";
@@ -7922,13 +7923,13 @@ let self = _self // overrides; _self = with self; {
     doCheck = false; # Test performs network access.
   };
 
-  namespaceautoclean = buildPerlPackage {
-    name = "namespace-autoclean-0.20";
+  namespaceautoclean = buildPerlPackage rec {
+    name = "namespace-autoclean-0.27";
     src = fetchurl {
-      url = mirror://cpan/authors/id/E/ET/ETHER/namespace-autoclean-0.20.tar.gz;
-      sha256 = "42a199314d07b7a29044d6072529ca53037c75a43550193b1586bd19c690a05f";
+      url = "mirror://cpan/authors/id/E/ET/ETHER/${name}.tar.gz";
+      sha256 = "1m5p76hz2r6mysx6afs5xpjp9yqnbq1q1bv5zkyn3g979l4a3vbc";
     };
-    buildInputs = [ ModuleBuildTiny TestRequires ];
+    buildInputs = [ ModuleBuildTiny TestRequires Moose ];
     propagatedBuildInputs = [ BHooksEndOfScope SubIdentify namespaceclean ];
     meta = {
       homepage = https://github.com/moose/namespace-autoclean;
@@ -9778,11 +9779,11 @@ let self = _self // overrides; _self = with self; {
     };
   };
 
-  strictures = buildPerlPackage {
-    name = "strictures-1.005004";
+  strictures = buildPerlPackage rec {
+    name = "strictures-2.000001";
     src = fetchurl {
-      url = mirror://cpan/authors/id/H/HA/HAARG/strictures-1.005004.tar.gz;
-      sha256 = "0y9q0v68060x5r3wfprwnjry6si7x9x5rkqz7nrf8fkxng7ndw5v";
+      url = "mirror://cpan/authors/id/H/HA/HAARG/${name}.tar.gz";
+      sha256 = "1lr0br982xb49wxra5ywq9vk4jhjmq28670i8yscks1wss58lwqy";
     };
     meta = {
       homepage = http://git.shadowcat.co.uk/gitweb/gitweb.cgi?p=p5sagit/strictures.git;
@@ -11715,11 +11716,11 @@ let self = _self // overrides; _self = with self; {
     };
   };
 
-  threads = buildPerlPackage {
-    name = "threads-2.01";
+  threads = buildPerlPackage rec {
+    name = "threads-2.02";
     src = fetchurl {
-      url = mirror://cpan/authors/id/J/JD/JDHEDDEN/threads-2.01.tar.gz;
-      sha256 = "429fea88757e0a347dac2cf9e414dfe8f06c8ca3c5445f6da4a95c2f883b6399";
+      url = "mirror://cpan/authors/id/J/JD/JDHEDDEN/${name}.tar.gz";
+      sha256 = "0vij8lagq4x6gv88x9gg23jd7i0s5fyyzs2wrxacih2ppj6kkiff";
     };
     meta = {
       description = "Perl interpreter-based threads";
@@ -12196,10 +12197,10 @@ let self = _self // overrides; _self = with self; {
   };
 
   version = buildPerlPackage rec {
-    name = "version-0.9908";
+    name = "version-0.9912";
     src = fetchurl {
       url = "mirror://cpan/authors/id/J/JP/JPEACOCK/${name}.tar.gz";
-      sha256 = "0nq84i1isk01ikwjxxynqyzz4g4g6hcbjq8l426n0hr42znlfmn4";
+      sha256 = "03hv7slgqrmzbbjjmxgvq91bjlbjg5xbp8n4h454amyab2adzw7b";
     };
   };
 
@@ -12649,11 +12650,11 @@ let self = _self // overrides; _self = with self; {
     };
   };
 
-  YAMLSyck = buildPerlPackage {
-    name = "YAML-Syck-1.27";
+  YAMLSyck = buildPerlPackage rec {
+    name = "YAML-Syck-1.29";
     src = fetchurl {
-      url = mirror://cpan/authors/id/T/TO/TODDR/YAML-Syck-1.27.tar.gz;
-      sha256 = "1y9dw18fz3s8v4n80wf858cjq4jlaza25wvsgv60a6z2l0sfax6y";
+      url = "mirror://cpan/authors/id/T/TO/TODDR/${name}.tar.gz";
+      sha256 = "0ff9rzb1gg12iiizjqv6bsxdxk39g3f6sa18znha4476acv7nmnk";
     };
     meta = {
       homepage = http://search.cpan.org/dist/YAML-Syck;
@@ -12663,10 +12664,10 @@ let self = _self // overrides; _self = with self; {
   };
 
   YAMLTiny = buildPerlPackage rec {
-    name = "YAML-Tiny-1.53";
+    name = "YAML-Tiny-1.69";
     src = fetchurl {
       url = "mirror://cpan/authors/id/E/ET/ETHER/${name}.tar.gz";
-      sha256 = "14p93i60x394ba6sdwpnckmv2vq7pfi9q7rzksp3nkxsz4484qmm";
+      sha256 = "14pmhksj68ii3rf4dza8im1i6jw3zafxkvxww5xlz7ib95cv135w";
     };
   };
 
