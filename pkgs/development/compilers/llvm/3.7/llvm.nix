@@ -12,12 +12,20 @@
 , version
 , zlib
 , compiler-rt_src
+, libcxxabi
+, debugVersion ? false
+, enableSharedLibraries ? !stdenv.isDarwin
 }:
 
 let
   src = fetch "llvm" "0lrirklh4nrcb078qc2f6vbmmc34kxqgsy9s18a1xbfdkmgqjidb";
 in stdenv.mkDerivation rec {
   name = "llvm-${version}";
+
+  patches = [
+    # Backport for Rust, remove when 3.7.1 is released
+    ./r242372-fix-LLVMBuildLandingPad.patch
+  ];
 
   unpackPhase = ''
     unpackFile ${src}
@@ -27,7 +35,8 @@ in stdenv.mkDerivation rec {
     mv compiler-rt-* $sourceRoot/projects/compiler-rt
   '';
 
-  buildInputs = [ perl groff cmake libxml2 python libffi ] /* ++ stdenv.lib.optional stdenv.isLinux valgrind */;
+  buildInputs = [ perl groff cmake libxml2 python libffi ]
+    ++ stdenv.lib.optional stdenv.isDarwin libcxxabi;
 
   propagatedBuildInputs = [ ncurses zlib ];
 
@@ -38,16 +47,17 @@ in stdenv.mkDerivation rec {
   '';
 
   cmakeFlags = with stdenv; [
-    "-DCMAKE_BUILD_TYPE=Release"
+    "-DCMAKE_BUILD_TYPE=${if debugVersion then "Debug" else "Release"}"
     "-DLLVM_INSTALL_UTILS=ON"  # Needed by rustc
     "-DLLVM_BUILD_TESTS=ON"
     "-DLLVM_ENABLE_FFI=ON"
     "-DLLVM_ENABLE_RTTI=ON"
-  ] ++ stdenv.lib.optionals (!isDarwin) [
+  ] ++ stdenv.lib.optional enableSharedLibraries
     "-DBUILD_SHARED_LIBS=ON"
+    ++ stdenv.lib.optional (!isDarwin)
     "-DLLVM_BINUTILS_INCDIR=${binutils}/include"
-  ] ++ stdenv.lib.optionals ( isDarwin) [
-    "-DCMAKE_CXX_FLAGS=-stdlib=libc++"
+    ++ stdenv.lib.optionals ( isDarwin) [
+    "-DLLVM_ENABLE_LIBCXX=ON"
     "-DCAN_TARGET_i386=false"
   ];
 

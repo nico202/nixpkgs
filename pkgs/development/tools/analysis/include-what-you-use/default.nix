@@ -1,9 +1,8 @@
-{ stdenv, fetchurl, cmake, llvmPackages_36 }:
+{ stdenv, fetchurl, cmake, llvmPackages }:
 
-let
-  version = "0.4";
-  llvmPackages = llvmPackages_36;
-in stdenv.mkDerivation rec {
+# Also bump llvmPackages in all-packages.nix to the supported version!
+let version = "0.5"; in
+stdenv.mkDerivation rec {
   name = "include-what-you-use-${version}";
 
   src = fetchurl {
@@ -11,7 +10,15 @@ in stdenv.mkDerivation rec {
     url = "${meta.homepage}/downloads/${name}.src.tar.gz";
   };
 
+  buildInputs = with llvmPackages; [ clang llvm ];
+  nativeBuildInputs = [ cmake ];
+
+  cmakeFlags = [ "-DIWYU_LLVM_ROOT_PATH=${llvmPackages.clang-unwrapped}" ];
+
+  enableParallelBuilding = true;
+
   meta = with stdenv.lib; {
+    inherit version;
     description = "Analyze #includes in C/C++ source files with clang";
     longDescription = ''
       For every symbol (type, function variable, or macro) that you use in
@@ -23,14 +30,7 @@ in stdenv.mkDerivation rec {
     '';
     homepage = http://include-what-you-use.org;
     license = licenses.bsd3;
-    platforms = with platforms; linux;
+    platforms = platforms.linux;
     maintainers = with maintainers; [ nckx ];
   };
-
-  buildInputs = with llvmPackages; [ clang llvm ];
-  nativeBuildInputs = [ cmake ];
-
-  cmakeFlags = "-DIWYU_LLVM_ROOT_PATH=${llvmPackages.clang-unwrapped}";
-
-  enableParallelBuilding = true;
 }

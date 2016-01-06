@@ -36,29 +36,19 @@
 , haddock, hspec, xhtml, primitive, cacert, pkgs
 , coreutils
 , libiconv
+
+, ghcjsBoot ? import ./ghcjs-boot.nix { inherit fetchgit; }
+, shims ? import ./shims.nix { inherit fetchFromGitHub; }
 }:
-let
-  version = "0.1.0";
-  ghcjsBoot = fetchgit {
-    url = "git://github.com/ghcjs/ghcjs-boot.git";
-    rev = "39cd58e12f02fa99f493387ba4c3708819a72294";
-    sha256 = "0s7hvg60piklrg9ypa7r44l4qzvpinrgsaffak6fr7gd3k08wn9d";
-    fetchSubmodules = true;
-  };
-  shims = fetchFromGitHub {
-    owner = "ghcjs";
-    repo = "shims";
-    rev = "f17d10cf47450fe4e00433e988db0bddddb35cc0";
-    sha256 = "1kgnkkz1khzkmb0dm0ssp8l17iy9d9n9phszcj6vg9vi7v9y7l05";
-  };
-in mkDerivation (rec {
+let version = "0.2.0"; in
+mkDerivation (rec {
   pname = "ghcjs";
   inherit version;
   src = fetchFromGitHub {
     owner = "ghcjs";
     repo = "ghcjs";
-    rev = "2ae1276a97c9f32c4b02080d1bb363cf0c2c553c";
-    sha256 = "18m1737w4bfn84cnwcf021gsy69c84dlkwxnyf4r5h97gly6jx7q";
+    rev = "561365ba1667053b5dc5846e2a8edb33eaa3f6dd";
+    sha256 = "1vfa7j0ql3sng29m944iznjw9hcmyl57nfkgxa33dvi2ival8dl2";
   };
   isLibrary = true;
   isExecutable = true;

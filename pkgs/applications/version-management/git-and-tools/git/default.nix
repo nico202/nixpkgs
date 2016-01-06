@@ -9,7 +9,7 @@
 }:
 
 let
-  version = "2.5.3";
+  version = "2.6.4";
   svn = subversionClient.override { perlBindings = true; };
 in
 
@@ -18,7 +18,7 @@ stdenv.mkDerivation {
 
   src = fetchurl {
     url = "https://www.kernel.org/pub/software/scm/git/git-${version}.tar.xz";
-    sha256 = "06is8pq8gsia3dav8mgl2zlvms2ny4hs1x0w2792ya51azc2jk8j";
+    sha256 = "0rnlbp7l4ggq3lk96v24rzw7qqawp6477i3b4m0b5q3346ap008w";
   };
 
   patches = [
@@ -35,6 +35,9 @@ stdenv.mkDerivation {
 
   # required to support pthread_cancel()
   NIX_LDFLAGS = stdenv.lib.optionalString (!stdenv.isDarwin) "-lgcc_s";
+
+  # without this, git fails when trying to check for /etc/gitconfig existence
+  propagatedSandboxProfile = stdenv.lib.sandbox.allowDirectoryList "/etc";
 
   makeFlags = "prefix=\${out} sysconfdir=/etc/ PERL_PATH=${perl}/bin/perl SHELL_PATH=${stdenv.shell} "
       + (if pythonSupport then "PYTHON_PATH=${python}/bin/python" else "NO_PYTHON=1")

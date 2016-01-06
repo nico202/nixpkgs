@@ -1,26 +1,25 @@
 { stdenv, fetchurl, bzip2, gfortran, libX11, libXmu, libXt
 , libjpeg, libpng, libtiff, ncurses, pango, pcre, perl, readline, tcl
 , texLive, tk, xz, zlib, less, texinfo, graphviz, icu, pkgconfig, bison
-, imake, which, jdk, openblas
+, imake, which, jdk, openblas, curl
 , withRecommendedPackages ? true
 }:
 
 stdenv.mkDerivation rec {
-  name = "R-3.2.2";
+  name = "R-3.2.3";
 
   src = fetchurl {
     url = "http://cran.r-project.org/src/base/R-3/${name}.tar.gz";
-    sha256 = "07a6s865bjnh7w0fqsrkv1pva76w99v86w0w787qpdil87km54cw";
+    sha256 = "b93b7d878138279234160f007cb9b7f81b8a72c012a15566e9ec5395cfd9b6c1";
   };
 
   buildInputs = [ bzip2 gfortran libX11 libXmu libXt
     libXt libjpeg libpng libtiff ncurses pango pcre perl readline tcl
     texLive tk xz zlib less texinfo graphviz icu pkgconfig bison imake
-    which jdk openblas
+    which jdk openblas curl
   ];
 
-  patches = [ ./no-usr-local-search-paths.patch
-              ./fix-tests-without-recommended-packages.patch ];
+  patches = [ ./no-usr-local-search-paths.patch ];
 
   preConfigure = ''
     configureFlagsArray=(

@@ -2,6 +2,7 @@
 , llvmPackages_37, jemalloc, ncurses
 
 , shortVersion, isRelease
+, forceBundledLLVM ? false
 , srcSha, srcRev ? ""
 , snapshotHashLinux686, snapshotHashLinux64
 , snapshotHashDarwin686, snapshotHashDarwin64
@@ -35,6 +36,8 @@ let version = if isRelease then
         "${shortVersion}-g${builtins.substring 0 7 srcRev}";
 
     name = "rustc-${version}";
+
+    llvmShared = llvmPackages_37.llvm.override { enableSharedLibraries = true; };
 
     platform = if stdenv.system == "i686-linux"
       then "linux-i386"
@@ -76,12 +79,14 @@ let version = if isRelease then
     snapshotName = "rust-stage0-${snapshotDate}-${snapshotRev}-${platform}-${snapshotHash}.tar.bz2";
 in
 
-stdenv.mkDerivation {
+with stdenv.lib; stdenv.mkDerivation {
   inherit name;
   inherit version;
   inherit meta;
 
   __impureHostDeps = [ "/usr/lib/libedit.3.dylib" ];
+
+  NIX_LDFLAGS = stdenv.lib.optionalString stdenv.isDarwin "-rpath ${llvmShared}/lib";
 
   src = if isRelease then
       fetchzip {
@@ -106,7 +111,7 @@ stdenv.mkDerivation {
     installPhase = ''
       mkdir -p "$out"
       cp -r bin "$out/bin"
-    '' + stdenv.lib.optionalString stdenv.isLinux ''
+    '' + optionalString stdenv.isLinux ''
       patchelf --interpreter "${stdenv.glibc}/lib/${stdenv.cc.dynamicLinker}" \
                --set-rpath "${stdenv.cc.cc}/lib/:${stdenv.cc.cc}/lib64/" \
                "$out/bin/rustc"
@@ -115,9 +120,10 @@ stdenv.mkDerivation {
 
   configureFlags = configureFlags
                 ++ [ "--enable-local-rust" "--local-rust-root=$snapshot" "--enable-rpath" ]
-                ++ [ "--llvm-root=${llvmPackages_37.llvm}" ] #"--jemalloc-root=${jemalloc}/lib" ]
+                # ++ [ "--jemalloc-root=${jemalloc}/lib"
                 ++ [ "--default-linker=${stdenv.cc}/bin/cc" "--default-ar=${stdenv.cc.binutils}/bin/ar" ]
-                ++ stdenv.lib.optional (stdenv.cc.cc ? isClang) "--enable-clang";
+                ++ optional (stdenv.cc.cc ? isClang) "--enable-clang"
+                ++ optional (!forceBundledLLVM) "--llvm-root=${llvmShared}";
 
   inherit patches;
 
@@ -132,7 +138,7 @@ stdenv.mkDerivation {
       --replace "\$\$(subst  /,//," "\$\$(subst /,/,"
 
     # Fix dynamic linking against llvm
-    sed -i 's/, kind = \\"static\\"//g' src/etc/mklldeps.py
+    ${optionalString (!forceBundledLLVM) ''sed -i 's/, kind = \\"static\\"//g' src/etc/mklldeps.py''}
 
     # Fix the configure script to not require curl as we won't use it
     sed -i configure \
@@ -153,10 +159,10 @@ stdenv.mkDerivation {
     configureFlagsArray+=("--infodir=$out/share/info")
   '';
 
-  # Procps is needed for one of the test cases
-  nativeBuildInputs = [ file python2 ]
-    ++ stdenv.lib.optionals stdenv.isLinux [ procps ];
-  buildInputs = [ llvmPackages_37.llvm ncurses ];
+  # ps is needed for one of the test cases
+  nativeBuildInputs = [ file python2 procps ];
+  buildInputs = [ ncurses ]
+    ++ optional (!forceBundledLLVM) llvmShared;
 
   enableParallelBuilding = true;
 

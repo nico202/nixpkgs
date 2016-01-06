@@ -140,6 +140,7 @@ done
 
 
 # Create device nodes in /dev.
+@preDeviceCommands@
 echo "running udev..."
 mkdir -p /etc/udev
 ln -sfn @udevRules@ /etc/udev/rules.d
@@ -147,6 +148,10 @@ mkdir -p /dev/.mdadm
 systemd-udevd --daemon
 udevadm trigger --action=add
 udevadm settle
+
+
+# Additional devices initialization.
+@postEarlyDeviceCommands@
 
 
 # Load boot-time keymap before any LVM/LUKS initialization

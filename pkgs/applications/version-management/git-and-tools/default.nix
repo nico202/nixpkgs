@@ -71,6 +71,8 @@ rec {
 
   tig = callPackage ./tig { };
 
+  transcrypt = callPackage ./transcrypt { };
+
   hub = import ./hub {
     inherit go;
     inherit stdenv fetchgit;
@@ -91,6 +93,8 @@ rec {
   };
 
   svn2git_kde = callPackage ./svn2git-kde { };
+
+  subgit = callPackage ./subgit { };
 
   darcsToGit = callPackage ./darcs-to-git { };
 

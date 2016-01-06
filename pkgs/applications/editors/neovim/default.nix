@@ -6,6 +6,7 @@
 , withPython3 ? true, python3Packages, extraPython3Packages ? []
 , withJemalloc ? true, jemalloc
 
+, withPyGUI ? false
 , vimAlias ? false
 , configure ? null
 }:
@@ -14,15 +15,15 @@ with stdenv.lib;
 
 let
 
-  version = "2015-10-08";
+  version = "0.1.1";
 
   # Note: this is NOT the libvterm already in nixpkgs, but some NIH silliness:
-  neovimLibvterm = let version = "2015-02-23"; in stdenv.mkDerivation {
+  neovimLibvterm = let version = "2015-11-06"; in stdenv.mkDerivation {
     name = "neovim-libvterm-${version}";
 
     src = fetchFromGitHub {
-      sha256 = "0i2h74jrx4fy90sv57xj8g4lbjjg4nhrq2rv6rz576fmqfpllcc5";
-      rev = "20ad1396c178c72873aeeb2870bd726f847acb70";
+      sha256 = "0f9r0wnr9ajcdd6as24igmch0n8s1annycb9f4k0vg6fngwaypy9";
+      rev = "04781d37ce5af3f580376dc721bd3b89c434966b";
       repo = "libvterm";
       owner = "neovim";
     };
@@ -45,7 +46,11 @@ let
   };
 
   pythonEnv = pythonPackages.python.buildEnv.override {
-    extraLibs = [ pythonPackages.neovim ] ++ extraPythonPackages;
+    extraLibs = (
+        if withPyGUI
+          then [ pythonPackages.neovim_gui ]
+          else [ pythonPackages.neovim ]
+      ) ++ extraPythonPackages;
     ignoreCollisions = true;
   };
 
@@ -58,8 +63,8 @@ let
     name = "neovim-${version}";
 
     src = fetchFromGitHub {
-      sha256 = "1kx4jsajl09klg0h0gzsv7mjz2kr09q4glznxwf8f5cncahgldfc";
-      rev = "57d3a2a52fea57874d08472d0f8ee8f1bcee87c1";
+      sha256 = "0crswjslp687yp1cpn7nmm0j2sccqhcxryzxv1s81cgpai0fzf60";
+      rev = "v${version}";
       repo = "neovim";
       owner = "neovim";
     };
@@ -93,6 +98,7 @@ let
 
     preConfigure = stdenv.lib.optionalString stdenv.isDarwin ''
       export DYLD_LIBRARY_PATH=${jemalloc}/lib
+      substituteInPlace src/nvim/CMakeLists.txt --replace "    util" ""
     '';
 
     postInstall = stdenv.lib.optionalString stdenv.isDarwin ''
@@ -102,8 +108,11 @@ let
                 $out/bin/nvim
     '' + optionalString withPython ''
       ln -s ${pythonEnv}/bin/python $out/bin/nvim-python
+    '' + optionalString withPyGUI ''
+      makeWrapper "${pythonEnv}/bin/pynvim" "$out/bin/pynvim" \
+        --prefix PATH : "$out/bin"
     '' + optionalString withPython3 ''
-      ln -s ${python3Env}/bin/python $out/bin/nvim-python3
+      ln -s ${python3Env}/bin/python3 $out/bin/nvim-python3
     '' + optionalString (withPython || withPython3) ''
         wrapProgram $out/bin/nvim --add-flags "${
           (optionalString withPython

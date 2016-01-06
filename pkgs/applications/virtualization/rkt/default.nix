@@ -2,47 +2,56 @@
 , fetchurl, fetchFromGitHub }:
 
 let
-  coreosImageRelease = "738.1.0";
+  coreosImageRelease = "835.9.0";
+  coreosImageSystemdVersion = "225";
+
+  # TODO: track https://github.com/coreos/rkt/issues/1758 to allow "host" flavor.
+  stage1Flavours = [ "coreos" ];
 
 in stdenv.mkDerivation rec {
-  version = "0.8.0";
+  version = "0.14.0";
   name = "rkt-${version}";
+  BUILDDIR="build-${name}";
 
   src = fetchFromGitHub {
       rev = "v${version}";
       owner = "coreos";
       repo = "rkt";
-      sha256 = "1abv9psd5w0m8p2kvrwyjnrclzajmrpbwfwmkgpnkydhmsimhnn0";
+      sha256 = "0dmgs9s40xhan2rh9f5n0k5gv8p2dn946zffq02sq35qqvi67s71";
   };
 
-  stage1image = fetchurl {
-    url = "http://alpha.release.core-os.net/amd64-usr/${coreosImageRelease}/coreos_production_pxe_image.cpio.gz";
-    sha256 = "1rnb9rwms5g7f142d9yh169a5k2hxiximpgk4y4kqmc1294lqnl0";
+  stage1BaseImage = fetchurl {
+    url = "http://stable.release.core-os.net/amd64-usr/${coreosImageRelease}/coreos_production_pxe_image.cpio.gz";
+    sha256 = "51dc10b4269b9c1801c233de49da817d29ca8d858bb0881df94dc90f7e86ce70";
   };
 
   buildInputs = [ autoconf automake go file git wget gnupg1 squashfsTools cpio ];
 
   preConfigure = ''
     ./autogen.sh
+    configureFlagsArray=(
+      --with-stage1-flavors=${builtins.concatStringsSep "," stage1Flavours}
+      ${if lib.findFirst (p: p == "coreos") null stage1Flavours != null then "
+      --with-coreos-local-pxe-image-path=${stage1BaseImage}
+      --with-coreos-local-pxe-image-systemd-version=v${coreosImageSystemdVersion}
+      " else "" }
+    );
   '';
 
   preBuild = ''
-    # hack to avoid downloading image during build, this has been
-    # improved in rkt master
-    mkdir -p build-rkt-0.8.0/tmp/usr_from_coreos
-    cp -v ${stage1image} build-rkt-0.8.0/tmp/usr_from_coreos/pxe.img
+    export BUILDDIR
   '';
 
   installPhase = ''
     mkdir -p $out/bin
-    cp -Rv build-rkt-${version}/bin/* $out/bin
+    cp -Rv $BUILDDIR/bin/* $out/bin
   '';
 
   meta = with lib; {
     description = "A fast, composable, and secure App Container runtime for Linux";
-    homepage = http://rkt.io;
+    homepage = https://github.com/coreos/rkt;
     license = licenses.asl20;
-    maintainers = with maintainers; [ ragge ];
+    maintainers = with maintainers; [ ragge steveej ];
     platforms = [ "x86_64-linux" ];
   };
 }

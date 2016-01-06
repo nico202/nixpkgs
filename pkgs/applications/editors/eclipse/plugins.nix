@@ -106,16 +106,16 @@ rec {
 
   anyedittools = buildEclipsePlugin rec {
     name = "anyedit-${version}";
-    version = "2.4.15.201504172030";
+    version = "2.6.0.201511291145";
 
     srcFeature = fetchurl {
       url = "http://andrei.gmxhome.de/eclipse/features/AnyEditTools_${version}.jar";
-      sha256 = "19hbwgqn02ghflbcp5cw3qy203mym5kwgzq4xrn0xcl8ckl5s2pp";
+      sha256 = "1vllci75qcd28b6hn2jz29l6cabxx9ql5i6l9cwq9rxp49dhc96b";
     };
 
     srcPlugin = fetchurl {
-      url = "http://dl.bintray.com/iloveeclipse/plugins/de.loskutov.anyedit.AnyEditTools_${version}.jar";
-      sha256 = "1i3ghf2mhdfhify30hlyxqmyqcp40pkd5zhsiyg6finn4w81sxv2";
+      url = "https://github.com/iloveeclipse/anyedittools/releases/download/2.6.0/de.loskutov.anyedit.AnyEditTools_${version}.jar";
+      sha256 = "0mgq0ylfa7srjf7azyx0kbahlsjf0sdpazqphzx4f0bfn1l328s4";
     };
 
     meta = with stdenv.lib; {
@@ -171,12 +171,12 @@ rec {
 
   checkstyle = buildEclipseUpdateSite rec {
     name = "checkstyle-${version}";
-    version = "6.11.0.201510052139";
+    version = "6.11.1.201510102004";
 
     src = fetchzip {
       stripRoot = false;
-      url = "mirror://sourceforge/project/eclipse-cs/Eclipse%20Checkstyle%20Plug-in/6.11.0/net.sf.eclipsecs-updatesite_${version}-bin.zip";
-      sha256 = "166nasgv3zsys7rlafvfnldfb6hiwiq3vil3papd59prwvky75fz";
+      url = "mirror://sourceforge/project/eclipse-cs/Eclipse%20Checkstyle%20Plug-in/6.11.1/net.sf.eclipsecs-updatesite_${version}-bin.zip";
+      sha256 = "0l9nfx7a3qdx1pvjgc6ck4rxh7yrvqsskr190yrxxwmpnyj9cjs4";
     };
 
     meta = with stdenv.lib; {
@@ -317,11 +317,11 @@ rec {
 
   scala = buildEclipseUpdateSite rec {
     name = "scala-${version}";
-    version = "4.1.1.20150911";
+    version = "4.1.1.20151201";
 
     src = fetchzip {
       url = "http://download.scala-ide.org/sdk/lithium/e44/scala211/stable/update-site.zip";
-      sha256 = "03g24sjivm7kzy64wwjs4ihf9vrb6703lb7bx3jafxzcwqm0pj1i";
+      sha256 = "19iqaha9c5n5hkyn83xj8znkvshm4823d65zigbj97fz8gzrr0la";
     };
 
     meta = with stdenv.lib; {
@@ -335,16 +335,16 @@ rec {
 
   testng = buildEclipsePlugin rec {
     name = "testng-${version}";
-    version = "6.9.7.201510070420";
+    version = "6.9.10.201512020421";
 
     srcFeature = fetchurl {
-      url = "http://beust.com/eclipse/features/org.testng.eclipse_${version}.jar";
-      sha256 = "185m6zcz1havhl94qgwms9szcs7vhrrq8rckbrb1vz02208yyhpn";
+      url = "http://beust.com/eclipse-old/eclipse_${version}/features/org.testng.eclipse_${version}.jar";
+      sha256 = "17y0cb1xprldjav14iy2sinv7lcw4xnjs2fwz9gl41m9m1c0hajk";
     };
 
     srcPlugin = fetchurl {
-      url = "http://beust.com/eclipse/plugins/org.testng.eclipse_${version}.jar";
-      sha256 = "1rw678cd9nm623dvaddncadaclif62zcb15jl7ryzcmck2y380l5";
+      url = "http://beust.com/eclipse-old/eclipse_${version}/plugins/org.testng.eclipse_${version}.jar";
+      sha256 = "1iwq0ifk9l56z11vhy5yscvl8l1xk6igkp103v9vwvcx6nlmkfgc";
     };
 
     meta = with stdenv.lib; {

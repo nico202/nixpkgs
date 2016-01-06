@@ -16,13 +16,13 @@ let
 
 in stdenv.mkDerivation rec {
   name = "tor-browser-${version}";
-  version = "5.0.3";
+  version = "5.0.6";
 
   src = fetchurl {
     url = "https://archive.torproject.org/tor-package-archive/torbrowser/${version}/tor-browser-linux${if stdenv.is64bit then "64" else "32"}-${version}_en-US.tar.xz";
     sha256 = if stdenv.is64bit then
-      "1lqsiidnlrh0dlwzc93d0vbjclkb1zq3mwfcjxadjpwik6afszsb" else
-      "1ajn1bw1j63h3yblh06mmp7xhwdhqg9pdkxyz1dqj1rsp264k50f";
+      "1ix05760l9j6bwbswd2fnk4b6nrrzxp3b8abvm4y4979pkkmasfw" else
+      "1q5mf91xxj1xs4ajj9i6mdhnzqycbdvprkzskx8pl6j9ll2hlsyh";
   };
 
   patchPhase = ''
@@ -46,14 +46,15 @@ in stdenv.mkDerivation rec {
     cp -R * $out/share/tor-browser
 
     cat > "$out/bin/tor-browser" << EOF
-      export HOME="\$HOME/.torbrowser4"
-      if [ ! -d \$HOME ]; then
-        mkdir -p \$HOME && cp -R $out/share/tor-browser/Browser/TorBrowser/Data \$HOME/ && chmod -R +w \$HOME
-        echo "pref(\"extensions.torlauncher.tordatadir_path\", \"\$HOME/Data/Tor/\");" >> \
-          ~/Data/Browser/profile.default/preferences/extension-overrides.js
-      fi
-      export LD_LIBRARY_PATH=${ldLibraryPath}:$out/share/tor-browser/Browser/TorBrowser/Tor
-      $out/share/tor-browser/Browser/firefox -no-remote -profile ~/Data/Browser/profile.default "$@"
+    #!${stdenv.shell}
+    export HOME="\$HOME/.torbrowser4"
+    if [ ! -d \$HOME ]; then
+      mkdir -p \$HOME && cp -R $out/share/tor-browser/Browser/TorBrowser/Data \$HOME/ && chmod -R +w \$HOME
+      echo "pref(\"extensions.torlauncher.tordatadir_path\", \"\$HOME/Data/Tor/\");" >> \
+        ~/Data/Browser/profile.default/preferences/extension-overrides.js
+    fi
+    export LD_LIBRARY_PATH=${ldLibraryPath}:$out/share/tor-browser/Browser/TorBrowser/Tor
+    $out/share/tor-browser/Browser/firefox -no-remote -profile ~/Data/Browser/profile.default "$@"
     EOF
     chmod +x $out/bin/tor-browser
   '';

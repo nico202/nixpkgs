@@ -1,7 +1,8 @@
 [
+  ./config/debug-info.nix
   ./config/fonts/corefonts.nix
-  ./config/fonts/fontconfig.nix
   ./config/fonts/fontconfig-ultimate.nix
+  ./config/fonts/fontconfig.nix
   ./config/fonts/fontdir.nix
   ./config/fonts/fonts.nix
   ./config/fonts/ghostscript.nix
@@ -22,9 +23,9 @@
   ./config/system-environment.nix
   ./config/system-path.nix
   ./config/timezone.nix
-  ./config/vpnc.nix
   ./config/unix-odbc-drivers.nix
   ./config/users-groups.nix
+  ./config/vpnc.nix
   ./config/zram.nix
   ./hardware/all-firmware.nix
   ./hardware/cpu/amd-microcode.nix
@@ -51,6 +52,7 @@
   ./misc/lib.nix
   ./misc/locate.nix
   ./misc/meta.nix
+  ./misc/nixos.nix
   ./misc/nixpkgs.nix
   ./misc/passthru.nix
   ./misc/version.nix
@@ -61,9 +63,12 @@
   ./programs/command-not-found/command-not-found.nix
   ./programs/dconf.nix
   ./programs/environment.nix
+  ./programs/freetds.nix
+  ./programs/fish.nix
   ./programs/ibus.nix
   ./programs/kbdlight.nix
   ./programs/light.nix
+  ./programs/man.nix
   ./programs/nano.nix
   ./programs/screen.nix
   ./programs/shadow.nix
@@ -73,10 +78,10 @@
   ./programs/uim.nix
   ./programs/venus.nix
   ./programs/wvdial.nix
-  ./programs/freetds.nix
   ./programs/xfs_quota.nix
   ./programs/zsh/zsh.nix
   ./rename.nix
+  ./security/acme.nix
   ./security/apparmor.nix
   ./security/apparmor-suid.nix
   ./security/ca.nix
@@ -116,6 +121,7 @@
   ./services/computing/slurm/slurm.nix
   ./services/continuous-integration/jenkins/default.nix
   ./services/continuous-integration/jenkins/slave.nix
+  ./services/continuous-integration/jenkins/job-builder.nix
   ./services/databases/4store-endpoint.nix
   ./services/databases/4store.nix
   ./services/databases/couchdb.nix
@@ -185,8 +191,10 @@
   ./services/mail/postfix.nix
   ./services/mail/spamassassin.nix
   ./services/misc/apache-kafka.nix
-  #./services/misc/autofs.nix
+  ./services/misc/autofs.nix
+  ./services/misc/bepasty.nix
   ./services/misc/canto-daemon.nix
+  ./services/misc/calibre-server.nix
   ./services/misc/cpuminer-cryptonight.nix
   ./services/misc/cgminer.nix
   ./services/misc/confd.nix
@@ -202,6 +210,7 @@
   ./services/misc/gitolite.nix
   ./services/misc/gpsd.nix
   ./services/misc/ihaskell.nix
+  ./services/misc/mathics.nix
   ./services/misc/mbpfan.nix
   ./services/misc/mediatomb.nix
   ./services/misc/mesos-master.nix
@@ -234,6 +243,8 @@
   ./services/monitoring/dd-agent.nix
   ./services/monitoring/grafana.nix
   ./services/monitoring/graphite.nix
+  ./services/monitoring/heapster.nix
+  ./services/monitoring/longview.nix
   ./services/monitoring/monit.nix
   ./services/monitoring/munin.nix
   ./services/monitoring/nagios.nix
@@ -264,6 +275,7 @@
   ./services/networking/atftpd.nix
   ./services/networking/avahi-daemon.nix
   ./services/networking/bind.nix
+  ./services/networking/autossh.nix
   ./services/networking/bird.nix
   ./services/networking/bitlbee.nix
   ./services/networking/btsync.nix
@@ -303,6 +315,7 @@
   ./services/networking/lambdabot.nix
   ./services/networking/mailpile.nix
   ./services/networking/minidlna.nix
+  ./services/networking/miniupnpd.nix
   ./services/networking/mstpd.nix
   ./services/networking/murmur.nix
   ./services/networking/namecoind.nix
@@ -333,6 +346,7 @@
   ./services/networking/searx.nix
   ./services/networking/seeks.nix
   ./services/networking/skydns.nix
+  ./services/networking/shairport-sync.nix
   ./services/networking/shout.nix
   ./services/networking/softether.nix
   ./services/networking/spiped.nix
@@ -392,6 +406,7 @@
   ./services/ttys/agetty.nix
   ./services/ttys/gpm.nix
   ./services/ttys/kmscon.nix
+  ./services/web-apps/pump.io.nix
   ./services/web-servers/apache-httpd/default.nix
   ./services/web-servers/fcgiwrap.nix
   ./services/web-servers/jboss/default.nix
@@ -428,6 +443,7 @@
   ./services/x11/window-managers/metacity.nix
   ./services/x11/window-managers/none.nix
   ./services/x11/window-managers/twm.nix
+  ./services/x11/window-managers/windowlab.nix
   ./services/x11/window-managers/wmii.nix
   ./services/x11/window-managers/xmonad.nix
   ./services/x11/xfs.nix
@@ -436,6 +452,7 @@
   ./system/activation/top-level.nix
   ./system/boot/coredump.nix
   ./system/boot/emergency-mode.nix
+  ./system/boot/initrd-network.nix
   ./system/boot/kernel.nix
   ./system/boot/kexec.nix
   ./system/boot/loader/efi.nix
@@ -496,6 +513,7 @@
   ./virtualisation/amazon-options.nix
   ./virtualisation/openvswitch.nix
   ./virtualisation/parallels-guest.nix
+  ./virtualisation/rkt.nix
   ./virtualisation/virtualbox-guest.nix
   ./virtualisation/virtualbox-host.nix
   ./virtualisation/vmware-guest.nix

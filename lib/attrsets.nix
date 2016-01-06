@@ -23,6 +23,17 @@ rec {
       then attrByPath (tail attrPath) default e.${attr}
       else default;
 
+  /* Return if an attribute from nested attribute set exists.
+     For instance ["x" "y"] applied to some set e returns true, if e.x.y exists. False
+     is returned otherwise. */
+  hasAttrByPath = attrPath: e:
+    let attr = head attrPath;
+    in
+      if attrPath == [] then true
+      else if e ? ${attr}
+      then hasAttrByPath (tail attrPath) e.${attr}
+      else false;
+
 
   /* Return nested attribute set in which an attribute is set.  For instance
      ["x" "y"] applied with some value v returns `x.y = v;' */
@@ -116,7 +127,7 @@ rec {
 
      Type:
        collect ::
-         (AttrSet -> Bool) -> AttrSet -> AttrSet
+         (AttrSet -> Bool) -> AttrSet -> [x]
 
      Example:
        collect isList { a = { b = ["b"]; }; c = [1]; }

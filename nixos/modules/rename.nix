@@ -1,170 +1,103 @@
-{ config, lib, options, ... }:
+{ lib, ... }:
 
 with lib;
 
-let
+{
+  imports = [
+    (mkRenamedOptionModule [ "environment" "x11Packages" ] [ "environment" "systemPackages" ])
+    (mkRenamedOptionModule [ "environment" "enableBashCompletion" ] [ "programs" "bash" "enableCompletion" ])
+    (mkRenamedOptionModule [ "environment" "nix" ] [ "nix" "package" ])
+    (mkRenamedOptionModule [ "fonts" "enableFontConfig" ] [ "fonts" "fontconfig" "enable" ])
+    (mkRenamedOptionModule [ "fonts" "extraFonts" ] [ "fonts" "fonts" ])
 
-  alias = from: to: rename {
-    inherit from to;
-    name = "Alias";
-    use = id;
-    define = id;
-    visible = true;
-  };
+    (mkRenamedOptionModule [ "security" "extraSetuidPrograms" ] [ "security" "setuidPrograms" ])
+    (mkRenamedOptionModule [ "networking" "enableWLAN" ] [ "networking" "wireless" "enable" ])
+    (mkRenamedOptionModule [ "networking" "enableRT73Firmware" ] [ "networking" "enableRalinkFirmware" ])
 
-  # warn option was renamed
-  obsolete = from: to: rename {
-    inherit from to;
-    name = "Obsolete name";
-    use = x: builtins.trace "Obsolete option `${showOption from}' is used. It was renamed to `${showOption to}'." x;
-    define = x: builtins.trace "Obsolete option `${showOption from}' is used. It was renamed to `${showOption to}'." x;
-  };
+    (mkRenamedOptionModule [ "services" "cadvisor" "host" ] [ "services" "cadvisor" "listenAddress" ])
+    (mkRenamedOptionModule [ "services" "dockerRegistry" "host" ] [ "services" "dockerRegistry" "listenAddress" ])
+    (mkRenamedOptionModule [ "services" "elasticsearch" "host" ] [ "services" "elasticsearch" "listenAddress" ])
+    (mkRenamedOptionModule [ "services" "graphite" "api" "host" ] [ "services" "graphite" "api" "listenAddress" ])
+    (mkRenamedOptionModule [ "services" "graphite" "web" "host" ] [ "services" "graphite" "web" "listenAddress" ])
+    (mkRenamedOptionModule [ "services" "kibana" "host" ] [ "services" "kibana" "listenAddress" ])
+    (mkRenamedOptionModule [ "services" "mpd" "network" "host" ] [ "services" "mpd" "network" "listenAddress" ])
+    (mkRenamedOptionModule [ "services" "neo4j" "host" ] [ "services" "neo4j" "listenAddress" ])
+    (mkRenamedOptionModule [ "services" "shout" "host" ] [ "services" "shout" "listenAddress" ])
+    (mkRenamedOptionModule [ "services" "sslh" "host" ] [ "services" "sslh" "listenAddress" ])
+    (mkRenamedOptionModule [ "services" "statsd" "host" ] [ "services" "statsd" "listenAddress" ])
+    (mkRenamedOptionModule [ "services" "subsonic" "host" ] [ "services" "subsonic" "listenAddress" ])
 
-  # abort if deprecated option is used
-  deprecated = from: to: rename {
-    inherit from to;
-    name = "Deprecated name";
-    use = x: abort "Deprecated option `${showOption from}' is used. It was renamed to `${showOption to}'.";
-    define = x: abort "Deprecated option `${showOption from}' is used. It was renamed to `${showOption to}'.";
-  };
+    # Old Grub-related options.
+    (mkRenamedOptionModule [ "boot" "initrd" "extraKernelModules" ] [ "boot" "initrd" "kernelModules" ])
+    (mkRenamedOptionModule [ "boot" "extraKernelParams" ] [ "boot" "kernelParams" ])
 
-  showOption = concatStringsSep ".";
+    # smartd
+    (mkRenamedOptionModule [ "services" "smartd" "deviceOpts" ] [ "services" "smartd" "defaults" "monitored" ])
 
-  zipModules = list:
-    zipAttrsWith (n: v:
-      if tail v != [] then
-        if all (o: isAttrs o && o ? _type) v then mkMerge v
-        else if n == "_type" then head v
-        else if n == "warnings" then concatLists v
-        else if n == "description" || n == "apply" then
-          abort "Cannot rename an option to multiple options."
-        else zipModules v
-      else head v
-    ) list;
+    # OpenSSH
+    (mkRenamedOptionModule [ "services" "sshd" "ports" ] [ "services" "openssh" "ports" ])
+    (mkAliasOptionModule [ "services" "sshd" "enable" ] [ "services" "openssh" "enable" ])
+    (mkRenamedOptionModule [ "services" "sshd" "allowSFTP" ] [ "services" "openssh" "allowSFTP" ])
+    (mkRenamedOptionModule [ "services" "sshd" "forwardX11" ] [ "services" "openssh" "forwardX11" ])
+    (mkRenamedOptionModule [ "services" "sshd" "gatewayPorts" ] [ "services" "openssh" "gatewayPorts" ])
+    (mkRenamedOptionModule [ "services" "sshd" "permitRootLogin" ] [ "services" "openssh" "permitRootLogin" ])
+    (mkRenamedOptionModule [ "services" "xserver" "startSSHAgent" ] [ "services" "xserver" "startOpenSSHAgent" ])
+    (mkRenamedOptionModule [ "services" "xserver" "startOpenSSHAgent" ] [ "programs" "ssh" "startAgent" ])
+    (mkAliasOptionModule [ "services" "openssh" "knownHosts" ] [ "programs" "ssh" "knownHosts" ])
 
-  rename = { from, to, name, use, define, visible ? false }:
-    let
-      setTo = setAttrByPath to;
-      setFrom = setAttrByPath from;
-      toOf = attrByPath to
-        (abort "Renaming error: option `${showOption to}' does not exists.");
-      fromOf = attrByPath from
-        (abort "Internal error: option `${showOption from}' should be declared.");
-    in
-      [ { options = setFrom (mkOption {
-            description = "${name} of <option>${showOption to}</option>.";
-            apply = x: use (toOf config);
-            inherit visible;
-          });
+    # VirtualBox
+    (mkRenamedOptionModule [ "services" "virtualbox" "enable" ] [ "virtualisation" "virtualbox" "guest" "enable" ])
+    (mkRenamedOptionModule [ "services" "virtualboxGuest" "enable" ] [ "virtualisation" "virtualbox" "guest" "enable" ])
+    (mkRenamedOptionModule [ "programs" "virtualbox" "enable" ] [ "virtualisation" "virtualbox" "host" "enable" ])
+    (mkRenamedOptionModule [ "programs" "virtualbox" "addNetworkInterface" ] [ "virtualisation" "virtualbox" "host" "addNetworkInterface" ])
+    (mkRenamedOptionModule [ "programs" "virtualbox" "enableHardening" ] [ "virtualisation" "virtualbox" "host" "enableHardening" ])
+    (mkRenamedOptionModule [ "services" "virtualboxHost" "enable" ] [ "virtualisation" "virtualbox" "host" "enable" ])
+    (mkRenamedOptionModule [ "services" "virtualboxHost" "addNetworkInterface" ] [ "virtualisation" "virtualbox" "host" "addNetworkInterface" ])
+    (mkRenamedOptionModule [ "services" "virtualboxHost" "enableHardening" ] [ "virtualisation" "virtualbox" "host" "enableHardening" ])
 
-          config = setTo (mkAliasAndWrapDefinitions define (fromOf options));
-        }
-      ];
+    # Tarsnap
+    (mkRenamedOptionModule [ "services" "tarsnap" "config" ] [ "services" "tarsnap" "archives" ])
 
-  obsolete' = option: singleton
-    { options = setAttrByPath option (mkOption {
-        default = null;
-        visible = false;
-      });
-      config.warnings = optional (getAttrFromPath option config != null)
-        "The option `${showOption option}' defined in your configuration no longer has any effect; please remove it.";
-    };
+    # proxy
+    (mkRenamedOptionModule [ "nix" "proxy" ] [ "networking" "proxy" "default" ])
 
-in zipModules ([]
+    # KDE
+    (mkRenamedOptionModule [ "kde" "extraPackages" ] [ "environment" "systemPackages" ])
+    (mkRenamedOptionModule [ "environment" "kdePackages" ] [ "environment" "systemPackages" ])
 
-++ obsolete [ "environment" "x11Packages" ] [ "environment" "systemPackages" ]
-++ obsolete [ "environment" "enableBashCompletion" ] [ "programs" "bash" "enableCompletion" ]
-++ obsolete [ "environment" "nix" ] [ "nix" "package" ]
-++ obsolete [ "fonts" "enableFontConfig" ] [ "fonts" "fontconfig" "enable" ]
-++ obsolete [ "fonts" "extraFonts" ] [ "fonts" "fonts" ]
-++ alias [ "users" "extraUsers" ] [ "users" "users" ]
-++ alias [ "users" "extraGroups" ] [ "users" "groups" ]
+    # Multiple efi bootloaders now
+    (mkRenamedOptionModule [ "boot" "loader" "efi" "efibootmgr" "enable" ] [ "boot" "loader" "efi" "canTouchEfiVariables" ])
 
-++ obsolete [ "security" "extraSetuidPrograms" ] [ "security" "setuidPrograms" ]
-++ obsolete [ "networking" "enableWLAN" ] [ "networking" "wireless" "enable" ]
-++ obsolete [ "networking" "enableRT73Firmware" ] [ "networking" "enableRalinkFirmware" ]
+    # NixOS environment changes
+    # !!! this hardcodes bash, could we detect from config which shell is actually used?
+    (mkRenamedOptionModule [ "environment" "promptInit" ] [ "programs" "bash" "promptInit" ])
 
-# FIXME: Remove these eventually.
-++ obsolete [ "boot" "systemd" "sockets" ] [ "systemd" "sockets" ]
-++ obsolete [ "boot" "systemd" "targets" ] [ "systemd" "targets" ]
-++ obsolete [ "boot" "systemd" "services" ] [ "systemd" "services" ]
+    (mkRenamedOptionModule [ "services" "xserver" "driSupport" ] [ "hardware" "opengl" "driSupport" ])
+    (mkRenamedOptionModule [ "services" "xserver" "driSupport32Bit" ] [ "hardware" "opengl" "driSupport32Bit" ])
+    (mkRenamedOptionModule [ "services" "xserver" "s3tcSupport" ] [ "hardware" "opengl" "s3tcSupport" ])
+    (mkRenamedOptionModule [ "hardware" "opengl" "videoDrivers" ] [ "services" "xserver" "videoDrivers" ])
 
-# Old Grub-related options.
-++ obsolete [ "boot" "copyKernels" ] [ "boot" "loader" "grub" "copyKernels" ]
-++ obsolete [ "boot" "extraGrubEntries" ] [ "boot" "loader" "grub" "extraEntries" ]
-++ obsolete [ "boot" "extraGrubEntriesBeforeNixos" ] [ "boot" "loader" "grub" "extraEntriesBeforeNixOS" ]
-++ obsolete [ "boot" "grubDevice" ] [ "boot" "loader" "grub" "device" ]
-++ obsolete [ "boot" "bootMount" ] [ "boot" "loader" "grub" "bootDevice" ]
-++ obsolete [ "boot" "grubSplashImage" ] [ "boot" "loader" "grub" "splashImage" ]
+    (mkRenamedOptionModule [ "services" "mysql55" ] [ "services" "mysql" ])
 
-++ obsolete [ "boot" "initrd" "extraKernelModules" ] [ "boot" "initrd" "kernelModules" ]
-++ obsolete [ "boot" "extraKernelParams" ] [ "boot" "kernelParams" ]
+    (mkAliasOptionModule [ "environment" "checkConfigurationOptions" ] [ "_module" "check" ])
 
-# smartd
-++ obsolete [ "services" "smartd" "deviceOpts" ] [ "services" "smartd" "defaults" "monitored" ]
+    # XBMC
+    (mkRenamedOptionModule [ "services" "xserver" "windowManager" "xbmc" ] [ "services" "xserver" "desktopManager" "kodi" ])
+    (mkRenamedOptionModule [ "services" "xserver" "desktopManager" "xbmc" ] [ "services" "xserver" "desktopManager" "kodi" ])
 
-# OpenSSH
-++ obsolete [ "services" "sshd" "ports" ] [ "services" "openssh" "ports" ]
-++ alias [ "services" "sshd" "enable" ] [ "services" "openssh" "enable" ]
-++ obsolete [ "services" "sshd" "allowSFTP" ] [ "services" "openssh" "allowSFTP" ]
-++ obsolete [ "services" "sshd" "forwardX11" ] [ "services" "openssh" "forwardX11" ]
-++ obsolete [ "services" "sshd" "gatewayPorts" ] [ "services" "openssh" "gatewayPorts" ]
-++ obsolete [ "services" "sshd" "permitRootLogin" ] [ "services" "openssh" "permitRootLogin" ]
-++ obsolete [ "services" "xserver" "startSSHAgent" ] [ "services" "xserver" "startOpenSSHAgent" ]
-++ obsolete [ "services" "xserver" "startOpenSSHAgent" ] [ "programs" "ssh" "startAgent" ]
-++ alias [ "services" "openssh" "knownHosts" ] [ "programs" "ssh" "knownHosts" ]
+    # DNSCrypt-proxy
+    (mkRenamedOptionModule [ "services" "dnscrypt-proxy" "port" ] [ "services" "dnscrypt-proxy" "localPort" ])
 
-# VirtualBox
-++ obsolete [ "services" "virtualbox" "enable" ] [ "virtualisation" "virtualbox" "guest" "enable" ]
-++ obsolete [ "services" "virtualboxGuest" "enable" ] [ "virtualisation" "virtualbox" "guest" "enable" ]
-++ obsolete [ "programs" "virtualbox" "enable" ] [ "virtualisation" "virtualbox" "host" "enable" ]
-++ obsolete [ "programs" "virtualbox" "addNetworkInterface" ] [ "virtualisation" "virtualbox" "host" "addNetworkInterface" ]
-++ obsolete [ "programs" "virtualbox" "enableHardening" ] [ "virtualisation" "virtualbox" "host" "enableHardening" ]
-++ obsolete [ "services" "virtualboxHost" "enable" ] [ "virtualisation" "virtualbox" "host" "enable" ]
-++ obsolete [ "services" "virtualboxHost" "addNetworkInterface" ] [ "virtualisation" "virtualbox" "host" "addNetworkInterface" ]
-++ obsolete [ "services" "virtualboxHost" "enableHardening" ] [ "virtualisation" "virtualbox" "host" "enableHardening" ]
+    (mkRenamedOptionModule [ "services" "hostapd" "extraCfg" ] [ "services" "hostapd" "extraConfig" ])
 
-# Tarsnap
-++ obsolete [ "services" "tarsnap" "config" ] [ "services" "tarsnap" "archives" ]
+    # Options that are obsolete and have no replacement.
+    (mkRemovedOptionModule [ "boot" "initrd" "luks" "enable" ])
+    (mkRemovedOptionModule [ "programs" "bash" "enable" ])
+    (mkRemovedOptionModule [ "services" "samba" "defaultShare" ])
+    (mkRemovedOptionModule [ "services" "syslog-ng" "serviceName" ])
+    (mkRemovedOptionModule [ "services" "syslog-ng" "listenToJournal" ])
+    (mkRemovedOptionModule [ "ec2" "metadata" ])
+    (mkRemovedOptionModule [ "services" "openvpn" "enable" ])
 
-# proxy
-++ obsolete [ "nix" "proxy" ] [ "networking" "proxy" "default" ]
-
-# KDE
-++ deprecated [ "kde" "extraPackages" ] [ "environment" "systemPackages" ]
-++ obsolete [ "environment" "kdePackages" ] [ "environment" "systemPackages" ]
-
-# Multiple efi bootloaders now
-++ obsolete [ "boot" "loader" "efi" "efibootmgr" "enable" ] [ "boot" "loader" "efi" "canTouchEfiVariables" ]
-
-# NixOS environment changes
-# !!! this hardcodes bash, could we detect from config which shell is actually used?
-++ obsolete [ "environment" "promptInit" ] [ "programs" "bash" "promptInit" ]
-
-++ obsolete [ "services" "xserver" "driSupport" ] [ "hardware" "opengl" "driSupport" ]
-++ obsolete [ "services" "xserver" "driSupport32Bit" ] [ "hardware" "opengl" "driSupport32Bit" ]
-++ obsolete [ "services" "xserver" "s3tcSupport" ] [ "hardware" "opengl" "s3tcSupport" ]
-++ obsolete [ "hardware" "opengl" "videoDrivers" ] [ "services" "xserver" "videoDrivers" ]
-
-++ obsolete [ "services" "mysql55" ] [ "services" "mysql" ]
-
-++ alias    [ "environment" "checkConfigurationOptions" ] [ "_module" "check" ]
-
-# XBMC
-++ obsolete [ "services" "xserver" "windowManager" "xbmc" ] [ "services" "xserver" "desktopManager" "kodi" ]
-++ obsolete [ "services" "xserver" "desktopManager" "xbmc" ] [ "services" "xserver" "desktopManager" "kodi" ]
-
-# DNSCrypt-proxy
-++ obsolete [ "services" "dnscrypt-proxy" "port" ] [ "services" "dnscrypt-proxy" "localPort" ]
-
-# Options that are obsolete and have no replacement.
-++ obsolete' [ "boot" "loader" "grub" "bootDevice" ]
-++ obsolete' [ "boot" "initrd" "luks" "enable" ]
-++ obsolete' [ "programs" "bash" "enable" ]
-++ obsolete' [ "services" "samba" "defaultShare" ]
-++ obsolete' [ "services" "syslog-ng" "serviceName" ]
-++ obsolete' [ "services" "syslog-ng" "listenToJournal" ]
-++ obsolete' [ "ec2" "metadata" ]
-++ obsolete' [ "services" "openvpn" "enable" ]
-
-)
+  ];
+}

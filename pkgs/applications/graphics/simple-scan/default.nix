@@ -1,27 +1,29 @@
-{ stdenv, fetchurl, cairo, colord, glib, gtk3, gusb, intltool, itstool, libusb
-, libxml2, makeWrapper, packagekit, pkgconfig, saneBackends, systemd, vala }:
+{ stdenv, fetchurl, cairo, colord, glib, gtk3, gusb, intltool, itstool
+, libusb1, libxml2, pkgconfig, sane-backends, vala, wrapGAppsHook }:
 
-let version = "3.18.0"; in
+let version = "3.19.3"; in
 stdenv.mkDerivation rec {
   name = "simple-scan-${version}";
 
   src = fetchurl {
-    sha256 = "09qki4h1px65fxwpr7jppzqsi5cfcb8168p13blp3wcfizjgb9gl";
-    url = "https://launchpad.net/simple-scan/3.18/${version}/+download/${name}.tar.xz";
+    sha256 = "0il7ikd5hj9mgzrivm01g572g9101w8la58h3hjyakwcfw3jp976";
+    url = "https://launchpad.net/simple-scan/3.19/${version}/+download/${name}.tar.xz";
   };
 
-  buildInputs = [ cairo colord glib gusb gtk3 libusb libxml2 packagekit
-    saneBackends systemd vala ];
-  nativeBuildInputs = [ intltool itstool makeWrapper pkgconfig ];
+  buildInputs = [ cairo colord glib gusb gtk3 libusb1 libxml2 sane-backends
+    vala ];
+  nativeBuildInputs = [ intltool itstool pkgconfig wrapGAppsHook ];
+
+  configureFlags = [ "--disable-packagekit" ];
+
+  preBuild = ''
+    # Clean up stale generated .c files still referencing packagekit headers:
+    make clean
+  '';
 
   enableParallelBuilding = true;
 
   doCheck = true;
-
-  preFixup = ''
-    wrapProgram "$out/bin/simple-scan" \
-      --prefix XDG_DATA_DIRS : "$GSETTINGS_SCHEMAS_PATH"
-  '';
 
   meta = with stdenv.lib; {
     inherit version;

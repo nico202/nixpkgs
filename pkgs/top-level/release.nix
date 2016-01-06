@@ -13,14 +13,17 @@
 , officialRelease ? false
 , # The platforms for which we build Nixpkgs.
   supportedSystems ? [ "x86_64-linux" "i686-linux" "x86_64-darwin" ]
+, scrubJobs ? true
 }:
 
-with import ./release-lib.nix { inherit supportedSystems; };
+with import ./release-lib.nix { inherit supportedSystems scrubJobs; };
 
 let
 
+  lib = pkgs.lib;
+
   jobs =
-    { tarball = import ./make-tarball.nix { inherit nixpkgs officialRelease; };
+    { tarball = import ./make-tarball.nix { inherit pkgs nixpkgs officialRelease; };
 
       manual = import ../../doc;
       lib-tests = import ../../lib/tests/release.nix { inherit nixpkgs; };
@@ -42,8 +45,17 @@ let
               jobs.thunderbird.i686-linux
               jobs.glib-tested.x86_64-linux # standard glib doesn't do checks
               jobs.glib-tested.i686-linux
-            ];
+            ] ++ lib.collect lib.isDerivation jobs.stdenvBootstrapTools;
         };
+
+      stdenvBootstrapTools.i686-linux =
+        { inherit (import ../stdenv/linux/make-bootstrap-tools.nix { system = "i686-linux"; }) dist test; };
+
+      stdenvBootstrapTools.x86_64-linux =
+        { inherit (import ../stdenv/linux/make-bootstrap-tools.nix { system = "x86_64-linux"; }) dist test; };
+
+      stdenvBootstrapTools.x86_64-darwin =
+        { inherit (import ../stdenv/darwin/make-bootstrap-tools.nix { system = "x86_64-darwin"; }) dist test; };
 
     } // (mapTestOn ((packagePlatforms pkgs) // rec {
 
@@ -54,7 +66,6 @@ let
       binutils = linux;
       bind = linux;
       bvi = all;
-      castle_combat = linux;
       cdrkit = linux;
       classpath = linux;
       ddrescue = linux;
@@ -119,7 +130,7 @@ let
       lynx = linux;
       lzma = linux;
       man = linux;
-      manpages = linux;
+      man-pages = linux;
       maxima = linux;
       mc = linux;
       mcabber = linux;
@@ -149,7 +160,6 @@ let
       pmccabe = linux;
       ppl = all;
       procps = linux;
-      pthreadmanpages = linux;
       pygtk = linux;
       python = allBut cygwin;
       pythonFull = linux;
@@ -215,6 +225,8 @@ let
 
       haskell.compiler = packagePlatforms pkgs.haskell.compiler;
       haskellPackages = packagePlatforms pkgs.haskellPackages;
+
+      rPackages = packagePlatforms pkgs.rPackages;
 
       strategoPackages = {
         sdf = linux;

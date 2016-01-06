@@ -48,16 +48,19 @@ let
 
   IOKitSrcs = stdenv.lib.mapAttrs (name: value: if builtins.isFunction value then value name else value) IOKitSpecs;
 
+  adv_cmds        = applePackage "adv_cmds"          "119"         "102ssayxbg9wb35mdmhswbnw0bg7js3pfd8fcbic83c5q3bqa6c6" {};
+
   packages = {
-    adv_cmds        = applePackage "adv_cmds"          "153"         "174v6a4zkcm2pafzgdm6kvs48z5f911zl7k49hv7kjq6gm58w99v" {};
+    inherit (adv_cmds) ps locale;
     architecture    = applePackage "architecture"      "265"         "05wz8wmxlqssfp29x203fwfb8pgbdjj1mpz12v508658166yzqj8" {};
     bootstrap_cmds  = applePackage "bootstrap_cmds"    "86"          "0xr0296jm1r3q7kbam98h85g23qlfi763z54ahj563n636kyk2wb" {};
+    bsdmake         = applePackage "bsdmake"           "24"          "11a9kkhz5bfgi1i8kpdkis78lhc6b5vxmhd598fcdgra1jw4iac2" {};
     CarbonHeaders   = applePackage "CarbonHeaders"     "9A581"       "1hc0yijlpwq39x5bic6nnywqp2m1wj1f11j33m2q7p505h1h740c" {};
     CF              = applePackage "CF"                "855.17"      "1sadmxi9fsvsmdyxvg2133sdzvkzwil5fvyyidxsyk1iyfzqsvln" {};
     CommonCrypto    = applePackage "CommonCrypto"      "60049"       "1azin6w7cnzl0iv8kd2qzgwcp6a45zy64y5z1i6jysjcl6xmlw2h" {};
     configd         = applePackage "configd"           "453.19"      "1gxakahk8gallf16xmhxhprdxkh3prrmzxnmxfvj0slr0939mmr2" {};
     copyfile        = applePackage "copyfile"          "103.92.1"    "15i2hw5aqx0fklvmq6avin5s00adacvzqc740vviwc2y742vrdcd" {};
-    CoreOSMakefiles = applePackage "CoreOSMakefiles"   "76"          "0sw3w3sjil0kvxz8y86b81sz82rcd1nijayki1a1bsnsf0hz6qbf" {};
+    CoreOSMakefiles = applePackage "CoreOSMakefiles"   "40"          "0kxp53spbn7109l7cvhi88pmfsi81lwmbws819b6wr3hm16v84f4" {};
     Csu             = applePackage "Csu"               "79"          "1hif4dz23isgx85sgh11yg8amvp2ksvvhz3y5v07zppml7df2lnh" {};
     dtrace          = applePackage "dtrace"            "118.1"       "0pp5x8dgvzmg9vvg32hpy2brm17dpmbwrcr4prsmdmfvd4767wcf" {};
     dyld            = applePackage "dyld"              "239.4"       "07z7lyv6x0f6gllb5hymccl31zisrdhz4gqp722xcs9nhsqaqvn7" {};
@@ -76,7 +79,7 @@ let
     libpthread      = applePackage "libpthread"        "105.1.4"     "09vwwahcvmxvx2xl0890gkp91n61dld29j73y2pa597bqkag2qpg" {};
     libresolv       = applePackage "libresolv"         "54"          "028mp2smd744ryxwl8cqz4njv8h540sdw3an1yl7yxqcs04r0p4b" {};
     Libsystem       = applePackage "Libsystem"         "1197.1.1"    "1yfj2qdrf9vrzs7p9m4wlb7zzxcrim1gw43x4lvz4qydpp5kg2rh" {};
-    #libutil         = applePackage "libutil"           "38"          "12gsvmj342n5d81kqwba68bmz3zf2757442g1sz2y5xmcapa3g5f" {};
+    libutil         = applePackage "libutil"           "38"          "12gsvmj342n5d81kqwba68bmz3zf2757442g1sz2y5xmcapa3g5f" {};
     libunwind       = applePackage "libunwind"         "35.3"        "0miffaa41cv0lzf8az5k1j1ng8jvqvxcr4qrlkf3xyj479arbk1b" {};
     mDNSResponder   = applePackage "mDNSResponder"     "522.92.1"    "1cp87qda1s7brriv413i71yggm8yqfwv64vknrnqv24fcb8hzbmy" {};
     objc4           = applePackage "objc4"             "551.1"       "1jrdb6yyb5jwwj27c1r0nr2y2ihqjln8ynj61mpkvp144c1cm5bg" {};
