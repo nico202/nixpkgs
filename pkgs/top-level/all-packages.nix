@@ -1637,6 +1637,8 @@ let
 
   gitlab-git-http-server = callPackage ../applications/version-management/gitlab-git-http-server { };
 
+  glabels = callPackage ../applications/graphics/glabels { };
+
   glusterfs = callPackage ../tools/filesystems/glusterfs { };
 
   glmark2 = callPackage ../tools/graphics/glmark2 { };
