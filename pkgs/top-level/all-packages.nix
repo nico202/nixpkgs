@@ -1637,6 +1637,8 @@ let
 
   gitlab-git-http-server = callPackage ../applications/version-management/gitlab-git-http-server { };
 
+  glabels = callPackage ../applications/graphics/glabels { };
+
   glusterfs = callPackage ../tools/filesystems/glusterfs { };
 
   glmark2 = callPackage ../tools/graphics/glmark2 { };
@@ -11012,8 +11014,6 @@ let
   abook = callPackage ../applications/misc/abook { };
 
   adobe-reader = callPackage_i686 ../applications/misc/adobe-reader { };
-
-  aeolus = callPackage ../applications/audio/aeolus { };
 
   aewan = callPackage ../applications/editors/aewan { };
 
