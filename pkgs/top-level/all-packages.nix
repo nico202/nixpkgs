@@ -2559,8 +2559,6 @@ let
 
   opensc = callPackage ../tools/security/opensc { };
 
-  opensc_dnie_wrapper = callPackage ../tools/security/opensc-dnie-wrapper { };
-
   openssh =
     callPackage ../tools/networking/openssh {
       hpnSupport = false;
@@ -3032,6 +3030,8 @@ let
   sec = callPackage ../tools/admin/sec { };
 
   seccure = callPackage ../tools/security/seccure { };
+
+  setroot = callPackage  ../tools/X11/setroot { };
 
   setserial = callPackage ../tools/system/setserial { };
 
@@ -7989,8 +7989,6 @@ let
 
   openldap = callPackage ../development/libraries/openldap { };
 
-  libopensc_dnie = callPackage ../development/libraries/libopensc-dnie { };
-
   opencolorio = callPackage ../development/libraries/opencolorio { };
 
   ois = callPackage ../development/libraries/ois {};
@@ -9078,6 +9076,8 @@ let
     };
     openblas = openblasCompat;
     withRecommendedPackages = false;
+    inherit (darwin.apple_sdk.frameworks) Cocoa Foundation;
+    inherit (darwin) cf-private libobjc;
   };
 
   rWrapper = callPackage ../development/r-modules/wrapper.nix {
