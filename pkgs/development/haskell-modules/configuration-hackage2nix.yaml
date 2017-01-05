@@ -2068,10 +2068,13 @@ package-maintainers:
     - ghc-srcspan-plugin
     - located-base
   jb55:
-    - skeletons
+    - bson-lens
     - cased
+    - elm-export-persistent
     - pipes-csv
     - pipes-mongodb
+    - skeletons
+    - streaming-wai
   khumba:
     - hoppy-docs
     - hoppy-generator
@@ -5738,7 +5741,6 @@ dont-distribute-packages:
   mysql-simple-quasi:                           [ i686-linux, x86_64-linux, x86_64-darwin ]
   mysql-simple-typed:                           [ i686-linux, x86_64-linux, x86_64-darwin ]
   mysql-simple:                                 [ i686-linux, x86_64-linux, x86_64-darwin ]
-  mysql:                                        [ i686-linux, x86_64-linux, x86_64-darwin ]
   mystem:                                       [ i686-linux, x86_64-linux, x86_64-darwin ]
   myTestlll:                                    [ i686-linux, x86_64-linux, x86_64-darwin ]
   mywatch:                                      [ i686-linux, x86_64-linux, x86_64-darwin ]
