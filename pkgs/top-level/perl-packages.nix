@@ -2094,11 +2094,11 @@ let self = _self // overrides; _self = with self; {
     };
   };
 
-  CompressRawBzip2 = buildPerlPackage {
-    name = "Compress-Raw-Bzip2-2.064";
+  CompressRawBzip2 = buildPerlPackage rec {
+    name = "Compress-Raw-Bzip2-2.070";
     src = fetchurl {
-      url = mirror://cpan/authors/id/P/PM/PMQS/Compress-Raw-Bzip2-2.064.tar.gz;
-      sha256 = "0aqbggr9yf4hn21a9fra111rlmva3w8f3mqvbchl5l86knkbkwy3";
+      url = "mirror://cpan/authors/id/P/PM/PMQS/${name}.tar.gz";
+      sha256 = "0rmwpqhnhw5n11gm9mbxrxnardm0jfy7568ln9zw21bq3d7dsmn8";
     };
 
     # Don't build a private copy of bzip2.
@@ -2956,6 +2956,21 @@ let self = _self // overrides; _self = with self; {
     src = fetchurl {
       url = mirror://cpan/authors/id/R/RA/RAZINF/Data-Password-1.12.tar.gz;
       sha256 = "830cde81741ff384385412e16faba55745a54a7cc019dd23d7ed4f05d551a961";
+    };
+  };
+
+  DataPerl = buildPerlPackage rec {
+    name = "Data-Perl-0.002009";
+    src = fetchurl {
+      url = "mirror://cpan/authors/id/M/MA/MATTP/${name}.tar.gz";
+      sha256 = "b62b2225870c2c3b16fb78c429f8729ddb8ed0e342f4209ec3c261b764c36f8b";
+    };
+    buildInputs = [ TestDeep TestFatal TestOutput ];
+    propagatedBuildInputs = [ ClassMethodModifiers ListMoreUtils ModuleRuntime RoleTiny strictures ];
+    meta = {
+      homepage = https://github.com/mattp-/Data-Perl;
+      description = "Base classes wrapping fundamental Perl data types";
+      license = with stdenv.lib.licenses; [ artistic1 gpl1Plus ];
     };
   };
 
@@ -5687,6 +5702,21 @@ let self = _self // overrides; _self = with self; {
     };
   };
 
+  GnuPGInterface = buildPerlPackage rec {
+    name = "GnuPG-Interface-0.52";
+    src = fetchurl {
+      url = "mirror://cpan/authors/id/A/AL/ALEXMV/${name}.tar.gz";
+      sha256 = "247a9f5a88bb6745281c00d0f7d5d94e8599a92396849fd9571356dda047fd35";
+    };
+    buildInputs = with pkgs; [ which gnupg1compat ];
+    propagatedBuildInputs = [ Moo MooXHandlesVia MooXlate ];
+    doCheck = false;
+    meta = {
+      description = "Supply object methods for interacting with GnuPG";
+      license = with stdenv.lib.licenses; [ artistic1 gpl1Plus ];
+    };
+  };
+
   GoferTransporthttp = buildPerlPackage {
     name = "GoferTransport-http-1.017";
     src = fetchurl {
@@ -6568,11 +6598,11 @@ let self = _self // overrides; _self = with self; {
     };
   };
 
-  IOCompress = buildPerlPackage {
-    name = "IO-Compress-2.063";
+  IOCompress = buildPerlPackage rec {
+    name = "IO-Compress-2.070";
     src = fetchurl {
-      url = mirror://cpan/authors/id/P/PM/PMQS/IO-Compress-2.063.tar.gz;
-      sha256 = "1198jqsfyshc8pc74dvn04gmqa0x6nwngkbf731zgd4chrjlylhd";
+      url = "mirror://cpan/authors/id/P/PM/PMQS/${name}.tar.gz";
+      sha256 = "3e761b833c8e55eb811a5eeab07831bb380dcdce256cc45cfe8816602a3574ff";
     };
     propagatedBuildInputs = [ CompressRawBzip2 CompressRawZlib ];
     meta = {
@@ -6581,7 +6611,8 @@ let self = _self // overrides; _self = with self; {
       license = with stdenv.lib.licenses; [ artistic1 gpl1Plus ];
       platforms = stdenv.lib.platforms.linux;
     };
-    doCheck = !stdenv.isDarwin;
+    # Same as CompressRawZlib
+    doCheck = false && !stdenv.isDarwin;
   };
 
   IODigest = buildPerlPackage {
@@ -8443,7 +8474,7 @@ let self = _self // overrides; _self = with self; {
   mod_perl2 = buildPerlPackage {
     name = "mod_perl-2.0.9";
     src = fetchurl {
-      url = http://apache.mirror.iphh.net/perl/mod_perl-2.0.9.tar.gz;
+      url = mirror://cpan/authors/id/S/SH/SHAY/mod_perl-2.0.9.tar.gz;
       sha256 = "0azmir4hbb825mfmcxwa1frhnhhf82rl8xf6mmgwkhbinxmg4q02";
     };
     makeMakerFlags = "MP_AP_DESTDIR=$out";
@@ -8451,6 +8482,7 @@ let self = _self // overrides; _self = with self; {
     doCheck = false; # would try to start Apache HTTP server
     meta = {
       description = "Embed a Perl interpreter in the Apache HTTP server";
+      license = stdenv.lib.licenses.asl20;
     };
   };
   Mojolicious = buildPerlPackage rec {
@@ -8540,6 +8572,20 @@ let self = _self // overrides; _self = with self; {
       license = with stdenv.lib.licenses; [ artistic1 gpl1Plus ];
       maintainers = [ maintainers.eelco ];
       platforms   = stdenv.lib.platforms.unix;
+    };
+  };
+
+  MooXHandlesVia = buildPerlPackage rec {
+    name = "MooX-HandlesVia-0.001008";
+    src = fetchurl {
+      url = "mirror://cpan/authors/id/M/MA/MATTP/${name}.tar.gz";
+      sha256 = "b0946f23b3537763b8a96b8a83afcdaa64fce4b45235e98064845729acccfe8c";
+    };
+    buildInputs = [ MooXTypesMooseLike TestException TestFatal ];
+    propagatedBuildInputs = [ ClassMethodModifiers DataPerl ModuleRuntime Moo RoleTiny ];
+    meta = {
+      description = "NativeTrait-like behavior for Moo";
+      license = with stdenv.lib.licenses; [ artistic1 gpl1Plus ];
     };
   };
 
@@ -9555,17 +9601,29 @@ let self = _self // overrides; _self = with self; {
     };
   };
 
-  NetHTTP = buildPerlPackage {
-    name = "Net-HTTP-6.09";
+  NetHTTP = buildPerlPackage rec {
+    name = "Net-HTTP-6.12";
     src = fetchurl {
-      url = mirror://cpan/authors/id/E/ET/ETHER/Net-HTTP-6.09.tar.gz;
-      sha256 = "52762b939d84806908ba544581c5708375f7938c3c0e496c128ca3fbc425e58d";
+      url = "mirror://cpan/authors/id/O/OA/OALDERS/${name}.tar.gz";
+      sha256 = "8565aff76b3d09084642f3a83c654fb4ced8220e8e19d35c78b661519b4c1be6";
     };
     propagatedBuildInputs = [ URI ];
     meta = {
+      homepage = https://github.com/libwww-perl/Net-HTTP;
       description = "Low-level HTTP connection (client)";
       license = with stdenv.lib.licenses; [ artistic1 gpl1Plus ];
-      maintainers = [ maintainers.rycee ];
+    };
+  };
+
+  NetIDNEncode = buildPerlPackage {
+    name = "Net-IDN-Encode-2.400";
+    src = fetchurl {
+      url = mirror://cpan/authors/id/C/CF/CFAERBER/Net-IDN-Encode-2.400.tar.gz;
+      sha256 = "0a9knav5f9kjldrkxx1k47ivd3p23zkmi8aqgyhnxidhgasz1dlq";
+    };
+    buildInputs = [ TestNoWarnings ];
+    meta = {
+      description = "Internationalizing Domain Names in Applications (IDNA)";
     };
   };
 
