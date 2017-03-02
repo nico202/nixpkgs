@@ -2,14 +2,14 @@
 , ApplicationServices, CoreServices }:
 
 stdenv.mkDerivation rec {
-  version = "1.10.1";
+  version = "1.11.0";
   name = "libuv-${version}";
 
   src = fetchFromGitHub {
     owner = "libuv";
     repo = "libuv";
     rev = "v${version}";
-    sha256 = "0gna53fgsjjs38kv1g20xfaalv0fk3xncb6abga3saswrv283hx0";
+    sha256 = "02sm7f3l0shpfz25b77q2jjvlypc1mmz4zpzfgfmiplhgxxaa6la";
   };
 
   postPatch = let
@@ -17,14 +17,16 @@ stdenv.mkDerivation rec {
       "getnameinfo_basic" # probably network-dependent
       "spawn_setuid_fails" "spawn_setgid_fails" "fs_chown" # user namespaces
       "getaddrinfo_fail" "getaddrinfo_fail_sync"
-    ];
+    ]
+      # sometimes: timeout (no output)
+      ++ stdenv.lib.optional stdenv.isDarwin "process_title";
     tdRegexp = lib.concatStringsSep "\\|" toDisable;
     in lib.optionalString doCheck ''
       sed '/${tdRegexp}/d' -i test/test-list.h
     '';
 
-  buildInputs = [ automake autoconf libtool pkgconfig ]
-    ++ stdenv.lib.optionals stdenv.isDarwin [ ApplicationServices CoreServices ];
+  nativeBuildInputs = [ automake autoconf libtool pkgconfig ];
+  buildInputs = stdenv.lib.optionals stdenv.isDarwin [ ApplicationServices CoreServices ];
 
   preConfigure = ''
     LIBTOOLIZE=libtoolize ./autogen.sh
