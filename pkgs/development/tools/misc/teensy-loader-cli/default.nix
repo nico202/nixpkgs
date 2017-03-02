@@ -6,8 +6,8 @@ stdenv.mkDerivation {
   name = "teensy-loader-cli-${version}";
   src = fetchgit {
     url = "git://github.com/PaulStoffregen/teensy_loader_cli.git";
-    rev = "001da416bc362ff24485ff97e3a729bd921afe98";
-    sha256 = "36aed0a725055e36d71183ff57a023993099fdc380072177cffc7676da3c3966";
+    rev = "f7a728c5a0754ec741f709e2db28eee87fc3201f";
+    sha256 = "17ajlsl76zw22c0838zm3w1ilczcrhcf3xd6iwjjk8nrnizkiana";
   };
 
   buildInputs = [ unzip libusb ];
