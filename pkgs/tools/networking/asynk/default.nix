@@ -1,17 +1,18 @@
 { stdenv, fetchurl, python2, python2Packages, makeWrapper }:
 
 stdenv.mkDerivation rec {
-  version = "2.0.0";
+  version = "2.2.0";
   name = "ASynK-${version}";
 
   src = fetchurl {
     name = "${name}.tar.gz";
     url = "https://github.com/skarra/ASynK/archive/v${version}.tar.gz";
-    sha256 = "1bp30437mnls0kzm0525p3bg5nw9alpqrqhw186f6zp9i4y5znp1";
+    sha256 = "13zx2cvm2i7b1nqkq538nv48qriz4widzi3bmw9byir10jwjg3gy";
   };
 
   propagatedBuildInputs = with python2Packages;
-    [ python2 makeWrapper tornado requests dateutil
+    [ python2 makeWrapper tornado dateutil
+      httplib2 google_api_python_client
       vobject gdata caldavclientlibrary-asynk ];
 
   installPhase = ''
