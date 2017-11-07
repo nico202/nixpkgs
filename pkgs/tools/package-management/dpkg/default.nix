@@ -1,26 +1,20 @@
 { stdenv, fetchurl, perl, zlib, bzip2, xz, makeWrapper }:
 
-let version = "1.18.2"; in
-
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   name = "dpkg-${version}";
+  version = "1.18.24";
 
   src = fetchurl {
     url = "mirror://debian/pool/main/d/dpkg/dpkg_${version}.tar.xz";
-    sha256 = "192pqjd0c7i91kiqzn3cq2sqp5vivf0079i0wybdc9yhfcm4yj0i";
+    sha256 = "1d6p22vk1b9v16q96mwaz9w2xr4ly28yamkh49md9gq67qfhhlyq";
   };
-
-  postPatch = ''
-    # dpkg tries to force some dependents like debian_devscripts to use
-    # -fstack-protector-strong - not (yet?) a good idea. Disable for now:
-    substituteInPlace scripts/Dpkg/Vendor/Debian.pm \
-      --replace "stackprotectorstrong => 1" "stackprotectorstrong => 0"
-  '';
 
   configureFlags = [
     "--disable-dselect"
     "--with-admindir=/var/lib/dpkg"
     "PERL_LIBDIR=$(out)/${perl.libPrefix}"
+    (stdenv.lib.optionalString stdenv.isDarwin "--disable-linker-optimisations")
+    (stdenv.lib.optionalString stdenv.isDarwin "--disable-start-stop-daemon")
   ];
 
   preConfigure = ''
@@ -54,9 +48,9 @@ stdenv.mkDerivation {
 
   meta = with stdenv.lib; {
     description = "The Debian package manager";
-    homepage = http://wiki.debian.org/Teams/Dpkg;
+    homepage = https://wiki.debian.org/Teams/Dpkg;
     license = licenses.gpl2Plus;
-    platforms = platforms.linux;
+    platforms = platforms.unix;
     maintainers = with maintainers; [ mornfall nckx ];
   };
 }

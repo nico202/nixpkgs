@@ -21,7 +21,7 @@ stdenv.mkDerivation rec {
 
   configureFlags = [ "--with-tss" "--with-aru" "--with-tboot" "--enable-tnc" "--with-aide" ];
 
-  NIX_CFLAGS_COMPILE = "-I${trousers}/include/trousers -I${trousers}/include/tss";
+  NIX_CFLAGS_COMPILE = "-I${trousers}/include/trousers -I${trousers}/include/tss -Wno-deprecated-declarations";
 
   preInstall = ''
     mkdir -p $out
@@ -45,9 +45,9 @@ stdenv.mkDerivation rec {
 
   meta = {
     description = "TCG Platform Trust Service (PTS)";
-    homepage = "ttp://sourceforge.jp/projects/openpts";
+    homepage = http://sourceforge.jp/projects/openpts;
     license = stdenv.lib.licenses.cpl10;
-    platforms = stdenv.lib.platforms.unix;
+    platforms = stdenv.lib.platforms.linux;
     maintainers = with stdenv.lib.maintainers; [ tstrobel ];
   };
 }

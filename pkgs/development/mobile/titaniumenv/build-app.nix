@@ -1,7 +1,7 @@
-{stdenv, androidsdk, titaniumsdk, titanium, xcodewrapper, jdk, python, which, xcodeBaseDir}:
+{stdenv, androidsdk, titaniumsdk, titanium, alloy, xcodewrapper, jdk, python, nodejs, which, xcodeBaseDir}:
 { name, src, target, androidPlatformVersions ? [ "23" ], androidAbiVersions ? [ "armeabi" "armeabi-v7a" ], tiVersion ? null
 , release ? false, androidKeyStore ? null, androidKeyAlias ? null, androidKeyStorePassword ? null
-, iosMobileProvisioningProfile ? null, iosCertificateName ? null, iosCertificate ? null, iosCertificatePassword ? null, iosVersion ? "9.2"
+, iosMobileProvisioningProfile ? null, iosCertificateName ? null, iosCertificate ? null, iosCertificatePassword ? null, iosVersion ? "10.2"
 , enableWirelessDistribution ? false, installURL ? null
 }:
 
@@ -20,12 +20,34 @@ let
     security default-keychain -s login.keychain
     security delete-keychain $keychainName
   '';
+  
+  # On macOS, the java executable shows an -unoffical postfix in the version
+  # number. This confuses the build script's version detector.
+  # We fix this by creating a wrapper that strips it out of the output.
+  
+  javaVersionFixWrapper = stdenv.mkDerivation {
+    name = "javaVersionFixWrapper";
+    buildCommand = ''
+      mkdir -p $out/bin
+      cat > $out/bin/javac <<EOF
+      #! ${stdenv.shell} -e
+      
+      if [ "\$1" = "-version" ]
+      then
+          ${jdk}/bin/javac "\$@" 2>&1 | sed "s|-unofficial||" | sed "s|-u60|_60|" >&2
+      else
+          exec ${jdk}/bin/javac "\$@"
+      fi
+      EOF
+      chmod +x $out/bin/javac
+    '';
+  };
 in
 stdenv.mkDerivation {
   name = stdenv.lib.replaceChars [" "] [""] name;
   inherit src;
   
-  buildInputs = [ titanium jdk python which ] ++ stdenv.lib.optional (stdenv.system == "x86_64-darwin") xcodewrapper;
+  buildInputs = [ nodejs titanium alloy jdk python which ] ++ stdenv.lib.optional (stdenv.system == "x86_64-darwin") xcodewrapper;
   
   buildPhase = ''
     export HOME=$TMPDIR
@@ -49,15 +71,16 @@ stdenv.mkDerivation {
     
     ${if target == "android" then
         ''
-          titanium config --config-file $TMPDIR/config.json --no-colors android.sdk ${androidsdkComposition}/libexec/android-sdk-*
-          titanium config --config-file $TMPDIR/config.json --no-colors android.buildTools.selectedVersion 23.0.1
-          titanium config --config-file $TMPDIR/config.json --no-colors android.buildTools.path ${androidsdkComposition}/libexec/android-sdk-*/build-tools/android-*
-          titanium config --config-file $TMPDIR/config.json android.executables.zipalign ${androidsdkComposition}/libexec/android-sdk-*/build-tools/android-*/zipalign
-          titanium config --config-file $TMPDIR/config.json android.executables.aapt ${androidsdkComposition}/libexec/android-sdk-*/build-tools/android-*/aapt
-          titanium config --config-file $TMPDIR/config.json android.executables.aidl ${androidsdkComposition}/libexec/android-sdk-*/build-tools/android-*/aidl
-          titanium config --config-file $TMPDIR/config.json android.executables.dx ${androidsdkComposition}/libexec/android-sdk-*/build-tools/android-*/dx
+          ${stdenv.lib.optionalString (stdenv.system == "x86_64-darwin") ''
+            # Hack to make version detection work with OpenJDK on macOS
+            export PATH=${javaVersionFixWrapper}/bin:$PATH
+            export JAVA_HOME=${javaVersionFixWrapper}
+            javac -version
+          ''}
           
-          export PATH=$(echo ${androidsdkComposition}/libexec/android-sdk-*/tools):$(echo ${androidsdkComposition}/libexec/android-sdk-*/build-tools/android-*):$PATH
+          titanium config --config-file $TMPDIR/config.json --no-colors android.sdk ${androidsdkComposition}/libexec
+          
+          export PATH=$(echo ${androidsdkComposition}/libexec/tools):$(echo ${androidsdkComposition}/libexec/build-tools/android-*):$PATH
           
           ${if release then
             ''titanium build --config-file $TMPDIR/config.json --no-colors --force --platform android --target dist-playstore --keystore ${androidKeyStore} --alias ${androidKeyAlias} --store-password ${androidKeyStorePassword} --output-dir $out''
@@ -76,6 +99,7 @@ stdenv.mkDerivation {
               security default-keychain -s $keychainName
               security unlock-keychain -p "" $keychainName
               security import ${iosCertificate} -k $keychainName -P "${iosCertificatePassword}" -A
+              security set-key-partition-list -S apple-tool:,apple: -s -k "" $keychainName
               provisioningId=$(grep UUID -A1 -a ${iosMobileProvisioningProfile} | grep -o "[-A-Za-z0-9]\{36\}")
    
               # Ensure that the requested provisioning profile can be found
@@ -107,7 +131,7 @@ stdenv.mkDerivation {
               fi
               
               # Do the actual build
-              titanium build --config-file $TMPDIR/config.json --force --no-colors --platform ios --target dist-adhoc --pp-uuid $provisioningId --distribution-name "${iosCertificateName}" --keychain $HOME/Library/Keychains/$keychainName --device-family universal --ios-version ${iosVersion} --output-dir $out
+              titanium build --config-file $TMPDIR/config.json --force --no-colors --platform ios --target dist-adhoc --pp-uuid $provisioningId --distribution-name "${iosCertificateName}" --keychain $HOME/Library/Keychains/$keychainName-db --device-family universal --ios-version ${iosVersion} --output-dir $out
             
               # Remove our generated keychain
               ${deleteKeychain}
@@ -160,14 +184,14 @@ stdenv.mkDerivation {
            ''
              cp -av build/iphone/build/* $out
              mkdir -p $out/nix-support
-             echo "file binary-dist \"$(echo $out/Release-iphoneos/*.ipa)\"" > $out/nix-support/hydra-build-products
+             echo "file binary-dist \"$(echo $out/Products/Release-iphoneos/*.ipa)\"" > $out/nix-support/hydra-build-products
              
              ${stdenv.lib.optionalString enableWirelessDistribution ''
-               appname=$(basename $out/Release-iphoneos/*.ipa .ipa)
+               appname=$(basename $out/Products/Release-iphoneos/*.ipa .ipa)
                bundleId=$(grep '<id>[a-zA-Z0-9.]*</id>' tiapp.xml | sed -e 's|<id>||' -e 's|</id>||' -e 's/ //g')
                version=$(grep '<version>[a-zA-Z0-9.]*</version>' tiapp.xml | sed -e 's|<version>||' -e 's|</version>||' -e 's/ //g')
                
-               sed -e "s|@INSTALL_URL@|${installURL}?bundleId=$bundleId\&amp;version=$version\&amp;title=$appname|" ${../xcodeenv/install.html.template} > $out/$appname.html
+               sed -e "s|@INSTALL_URL@|${installURL}?bundleId=$bundleId\&amp;version=$version\&amp;title=$appname|" ${../xcodeenv/install.html.template} > "$out/$appname.html"
                echo "doc install \"$out/$appname.html\"" >> $out/nix-support/hydra-build-products
              ''}
            ''

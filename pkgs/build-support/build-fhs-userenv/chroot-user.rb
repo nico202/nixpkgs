@@ -2,25 +2,26 @@
 
 # Bind mounts hierarchy: from => to (relative)
 # If 'to' is nil, path will be the same
-mounts = { '/nix/store' => nil,
-           '/dev' => nil,
+mounts = { '/' => 'host',
            '/proc' => nil,
            '/sys' => nil,
-           '/etc' => 'host-etc',
-           '/tmp' => 'host-tmp',
-           '/home' => nil,
+           '/nix' => nil,
+           '/tmp' => nil,
            '/var' => nil,
            '/run' => nil,
-           '/root' => nil,
+           '/dev' => nil,
+           '/home' => nil,
          }
 
 # Propagate environment variables
 envvars = [ 'TERM',
             'DISPLAY',
+            'XAUTHORITY',
             'HOME',
             'XDG_RUNTIME_DIR',
             'LANG',
             'SSL_CERT_FILE',
+            'DBUS_SESSION_BUS_ADDRESS',
           ]
 
 require 'tmpdir'
@@ -53,6 +54,7 @@ $unshare = make_fcall 'unshare', [Fiddle::TYPE_INT], Fiddle::TYPE_INT
 
 MS_BIND = 0x1000
 MS_REC  = 0x4000
+MS_SLAVE  = 0x80000
 $mount = make_fcall 'mount', [Fiddle::TYPE_VOIDP,
                               Fiddle::TYPE_VOIDP,
                               Fiddle::TYPE_VOIDP,
@@ -61,12 +63,15 @@ $mount = make_fcall 'mount', [Fiddle::TYPE_VOIDP,
                     Fiddle::TYPE_INT
 
 # Read command line args
-abort "Usage: chrootenv swdir program args..." unless ARGV.length >= 2
-swdir = Pathname.new ARGV[0]
-execp = ARGV.drop 1
+abort "Usage: chrootenv program args..." unless ARGV.length >= 1
+execp = ARGV
 
 # Populate extra mounts
 if not ENV["CHROOTENV_EXTRA_BINDS"].nil?
+  $stderr.puts "CHROOTENV_EXTRA_BINDS is discussed for deprecation."
+  $stderr.puts "If you have a usecase, please drop a note in issue #16030."
+  $stderr.puts "Notice that we now bind-mount host FS to '/host' and symlink all directories from it to '/' by default."
+
   for extra in ENV["CHROOTENV_EXTRA_BINDS"].split(':')
     paths = extra.split('=')
     if not paths.empty?
@@ -92,23 +97,31 @@ root = Dir.mktmpdir 'chrootenv'
 # we don't use threads at all.
 $cpid = $fork.call
 if $cpid == 0
-  # Save user UID and GID
-  uid = Process.uid
-  gid = Process.gid
+  # If we are root, no need to create new user namespace.
+  if Process.uid == 0
+    $unshare.call CLONE_NEWNS
+    # Mark all mounted filesystems as slave so changes
+    # don't propagate to the parent mount namespace.
+    $mount.call nil, '/', nil, MS_REC | MS_SLAVE, nil
+  else
+    # Save user UID and GID
+    uid = Process.uid
+    gid = Process.gid
 
-  # Create new mount and user namespaces
-  # CLONE_NEWUSER requires a program to be non-threaded, hence
-  # native fork above.
-  $unshare.call CLONE_NEWNS | CLONE_NEWUSER
+    # Create new mount and user namespaces
+    # CLONE_NEWUSER requires a program to be non-threaded, hence
+    # native fork above.
+    $unshare.call CLONE_NEWNS | CLONE_NEWUSER
 
-  # Map users and groups to the parent namespace
-  begin
-    # setgroups is only available since Linux 3.19
-    write_file '/proc/self/setgroups', 'deny'
-  rescue
+    # Map users and groups to the parent namespace
+    begin
+      # setgroups is only available since Linux 3.19
+      write_file '/proc/self/setgroups', 'deny'
+    rescue
+    end
+    write_file '/proc/self/uid_map', "#{uid} #{uid} 1"
+    write_file '/proc/self/gid_map', "#{gid} #{gid} 1"
   end
-  write_file '/proc/self/uid_map', "#{uid} #{uid} 1"
-  write_file '/proc/self/gid_map', "#{gid} #{gid} 1"
 
   # Do rbind mounts.
   mounts.each do |from, rto|
@@ -117,27 +130,11 @@ if $cpid == 0
     $mount.call from, to, nil, MS_BIND | MS_REC, nil
   end
 
+  # Don't make root private so privilege drops inside chroot are possible
+  File.chmod(0755, root)
   # Chroot!
   Dir.chroot root
   Dir.chdir '/'
-
-  # Symlink swdir hierarchy
-  mount_dirs = Set.new mounts.map { |_, v| Pathname.new v }
-  link_swdir = lambda do |swdir, prefix|
-    swdir.find do |path|
-      rel = prefix.join path.relative_path_from(swdir)
-      # Don't symlink anything in binded or symlinked directories
-      Find.prune if mount_dirs.include? rel or rel.symlink?
-      if not rel.directory?
-        # File does not exist; make a symlink and bail out
-        rel.make_symlink path
-        Find.prune
-      end
-      # Recursively follow symlinks
-      link_swdir.call path.readlink, rel if path.symlink?
-    end
-  end
-  link_swdir.call swdir, Pathname.new('')
 
   # New environment
   new_env = Hash[ envvars.map { |x| [x, ENV[x]] } ]

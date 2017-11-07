@@ -1,7 +1,9 @@
 { stdenv, fetchurl, intltool, pkgconfig, glib, gtk, ncurses
-, pythonSupport ? false, python, pygtk}:
+, pythonSupport ? false, python27Packages}:
 
-stdenv.mkDerivation rec {
+let
+  inherit (python27Packages) python pygtk;
+in stdenv.mkDerivation rec {
   name = "vte-0.28.2";
 
   src = fetchurl {
@@ -31,7 +33,7 @@ stdenv.mkDerivation rec {
   '';
 
   meta = {
-    homepage = http://www.gnome.org/;
+    homepage = https://www.gnome.org/;
     description = "A library implementing a terminal emulator widget for GTK+";
     longDescription = ''
       VTE is a library (libvte) implementing a terminal emulator widget for

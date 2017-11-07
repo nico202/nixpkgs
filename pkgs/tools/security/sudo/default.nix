@@ -1,18 +1,23 @@
 { stdenv, fetchurl, coreutils, pam, groff
-, sendmailPath ? "/var/setuid-wrappers/sendmail"
+, sendmailPath ? "/run/wrappers/bin/sendmail"
 , withInsults ? false
 }:
 
 stdenv.mkDerivation rec {
-  name = "sudo-1.8.15";
+  name = "sudo-1.8.20p2";
 
   src = fetchurl {
     urls =
       [ "ftp://ftp.sudo.ws/pub/sudo/${name}.tar.gz"
         "ftp://ftp.sudo.ws/pub/sudo/OLD/${name}.tar.gz"
       ];
-    sha256 = "0263gi6i19fyzzc488n0qw3m518i39f6a7qmrfvahk9j10bkh5j3";
+    sha256 = "1na5likm1srnd1g5sjx7b0543sczw0yppacyqsazfdg9b48awhmx";
   };
+
+  prePatch = ''
+    # do not set sticky bit in nix store
+    substituteInPlace src/Makefile.in --replace 04755 0755
+  '';
 
   configureFlags = [
     "--with-env-editor"

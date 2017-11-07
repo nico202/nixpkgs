@@ -1,4 +1,4 @@
-{ stdenv, fetchurl, pkgconfig, mono, gtk-sharp, monoDLLFixer }:
+{ stdenv, fetchurl, pkgconfig, mono, gtk-sharp-2_0, monoDLLFixer }:
 
 stdenv.mkDerivation rec {
   name = "hyena-${version}";
@@ -10,17 +10,13 @@ stdenv.mkDerivation rec {
   };
 
   buildInputs = [
-    pkgconfig mono gtk-sharp
+    pkgconfig mono gtk-sharp-2_0
   ];
 
   postPatch = ''
     patchShebangs build/dll-map-makefile-verifier
     patchShebangs build/private-icon-theme-installer
     find -name Makefile.in | xargs -n 1 -d '\n' sed -e 's/^dnl/#/' -i
-  '';
-
-  preConfigure = ''
-    substituteInPlace configure --replace gmcs mcs
   '';
 
   dontStrip = true;

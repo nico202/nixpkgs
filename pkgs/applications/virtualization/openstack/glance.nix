@@ -1,7 +1,6 @@
+{ stdenv, fetchurl, python2Packages, sqlite, which, strace }:
 
-{ stdenv, fetchurl, pythonPackages, sqlite, which, strace }:
-
-pythonPackages.buildPythonPackage rec {
+python2Packages.buildPythonApplication rec {
   name = "glance-${version}";
   version = "11.0.0";
   namePrefix = "";
@@ -14,8 +13,8 @@ pythonPackages.buildPythonPackage rec {
   };
 
   # https://github.com/openstack/glance/blob/stable/liberty/requirements.txt
-  propagatedBuildInputs = with pythonPackages; [
-     pbr sqlalchemy_1_0 anyjson eventlet PasteDeploy routes webob sqlalchemy_migrate
+  propagatedBuildInputs = with python2Packages; [
+     pbr sqlalchemy anyjson eventlet PasteDeploy routes webob sqlalchemy_migrate
      httplib2 pycrypto iso8601 stevedore futurist keystonemiddleware paste
      jsonschema keystoneclient pyopenssl six retrying semantic-version qpid-python
      WSME osprofiler glance_store castellan taskflow cryptography xattr pysendfile
@@ -26,8 +25,8 @@ pythonPackages.buildPythonPackage rec {
      MySQL_python
   ];
 
-  buildInputs = with pythonPackages; [
-    Babel coverage fixtures mox3 mock oslosphinx requests2 testrepository pep8
+  buildInputs = with python2Packages; [
+    Babel coverage fixtures mox3 mock oslosphinx requests testrepository pep8
     testresources testscenarios testtools psutil_1 oslotest psycopg2
     sqlite which strace
   ];

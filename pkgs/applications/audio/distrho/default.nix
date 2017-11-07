@@ -2,12 +2,12 @@
 , libxslt, lv2, pkgconfig, premake3, xorg, ladspa-sdk }:
 
 stdenv.mkDerivation rec {
-  name = "distrho-ports-git-2015-07-18";
+  name = "distrho-ports-unstable-2017-08-04";
 
   src = fetchgit {
     url = "https://github.com/DISTRHO/DISTRHO-Ports.git";
-    rev = "53458838505efef91ed069d0a7d970b6b3588eba";
-    sha256 = "0fb4dxfvvqy8lnm9c91sxwn5wbcw8grfpm52zag25vrls251aih3";
+    rev = "f591a1066cd3929536699bb516caa4b5efd9d025";
+    sha256 = "1qjnmpmwbq2zpwn8v1dmqn3bjp2ykj5p89fkjax7idgpx1cg7pp9";
   };
 
   patchPhase = ''

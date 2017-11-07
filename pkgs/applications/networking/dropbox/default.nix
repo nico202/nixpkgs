@@ -1,7 +1,10 @@
-{ stdenv, fetchurl, makeDesktopItem, makeWrapper, patchelf
-, dbus_libs, gcc, glib, libdrm, libffi, libICE, libSM
-, libX11, libXmu, ncurses, popt, qt5, zlib
-, qtbase, qtdeclarative, qtwebkit
+{ mkDerivation, stdenv, lib, fetchurl, makeDesktopItem
+, makeWrapper, patchelf
+, dbus_libs, fontconfig, freetype, gcc, glib
+, libdrm, libffi, libICE, libSM
+, libX11, libXcomposite, libXext, libXmu, libXrender, libxcb
+, libxml2, libxslt, ncurses, zlib
+, qtbase, qtdeclarative, qtwebkit, wmctrl
 }:
 
 # this package contains the daemon version of dropbox
@@ -19,28 +22,30 @@
 # them with our own.
 
 let
-  # NOTE: When updating, please also update in current stable, as older versions stop working
-  version = "3.12.6";
-  sha256 =
-    {
-      "x86_64-linux" = "16d0g9bygvaixv4r42p72z6a6wqhkf5qzb058lijih93zjr8zjlj";
-      "i686-linux" = "1pgqz6axzzyaahql01g0l80an39hd9j4dnq0vfavwvb2qkb27dph";
-    }."${stdenv.system}" or (throw "system ${stdenv.system} not supported");
+  # NOTE: When updating, please also update in current stable,
+  # as older versions stop working
+  version = "35.4.20";
+  sha256 = {
+    "x86_64-linux" = "09qxr94bcyjn5ky20yapljxi2n2nbk6ldcpx2h0ysy8jp6zbrn78";
+    "i686-linux"   = "1rd4b26dbjf779g085si65lac74bk6lcx8k7i3nqk3vrvbva9n40";
+  }."${stdenv.system}" or (throw "system ${stdenv.system} not supported");
 
-  arch =
-    {
-      "x86_64-linux" = "x86_64";
-      "i686-linux" = "x86";
-    }."${stdenv.system}" or (throw "system ${stdenv.system} not supported");
+  arch = {
+    "x86_64-linux" = "x86_64";
+    "i686-linux"   = "x86";
+  }."${stdenv.system}" or (throw "system ${stdenv.system} not supported");
 
   # relative location where the dropbox libraries are stored
   appdir = "opt/dropbox";
 
-  ldpath = stdenv.lib.makeSearchPath "lib"
-    [
-      dbus_libs gcc.cc glib libdrm libffi libICE libSM libX11 libXmu
-      ncurses popt qtbase qtdeclarative qtwebkit zlib
-    ];
+  libs = [
+    dbus_libs fontconfig freetype gcc.cc glib libdrm libffi libICE libSM
+    libX11 libXcomposite libXext libXmu libXrender libxcb libxml2 libxslt
+    ncurses zlib
+
+    qtbase qtdeclarative qtwebkit
+  ];
+  ldpath = stdenv.lib.makeLibraryPath libs;
 
   desktopItem = makeDesktopItem {
     name = "dropbox";
@@ -52,45 +57,34 @@ let
     startupNotify = "false";
   };
 
-in stdenv.mkDerivation {
+in mkDerivation {
   name = "dropbox-${version}";
   src = fetchurl {
     name = "dropbox-${version}.tar.gz";
-    url = "https://dl-web.dropbox.com/u/17/dropbox-lnx.${arch}-${version}.tar.gz";
+    url = "https://clientupdates.dropboxstatic.com/dbx-releng/client/dropbox-lnx.${arch}-${version}.tar.gz";
     inherit sha256;
   };
 
   sourceRoot = ".dropbox-dist";
 
-  buildInputs = [ makeWrapper patchelf ];
-  dontPatchELF = true; # patchelf invoked explicitly below
+  nativeBuildInputs = [ makeWrapper patchelf ];
+  buildInputs = libs;
   dontStrip = true; # already done
 
   installPhase = ''
-    mkdir -p "$out/${appdir}"
-    cp -r "dropbox-lnx.${arch}-${version}"/* "$out/${appdir}/"
+    runHook preInstall
 
+    mkdir -p "$out/${appdir}"
+    cp -r --no-preserve=mode "dropbox-lnx.${arch}-${version}"/* "$out/${appdir}/"
+
+    # Vendored libraries interact poorly with our graphics drivers
     rm "$out/${appdir}/libdrm.so.2"
     rm "$out/${appdir}/libffi.so.6"
-    rm "$out/${appdir}/libicudata.so.42"
-    rm "$out/${appdir}/libicui18n.so.42"
-    rm "$out/${appdir}/libicuuc.so.42"
     rm "$out/${appdir}/libGL.so.1"
-    rm "$out/${appdir}/libpopt.so.0"
-    rm "$out/${appdir}/libQt5Core.so.5"
-    rm "$out/${appdir}/libQt5DBus.so.5"
-    rm "$out/${appdir}/libQt5Gui.so.5"
-    rm "$out/${appdir}/libQt5Network.so.5"
-    rm "$out/${appdir}/libQt5OpenGL.so.5"
-    rm "$out/${appdir}/libQt5PrintSupport.so.5"
-    rm "$out/${appdir}/libQt5Qml.so.5"
-    rm "$out/${appdir}/libQt5Quick.so.5"
-    rm "$out/${appdir}/libQt5Sql.so.5"
-    rm "$out/${appdir}/libQt5WebKit.so.5"
-    rm "$out/${appdir}/libQt5WebKitWidgets.so.5"
-    rm "$out/${appdir}/libQt5Widgets.so.5"
     rm "$out/${appdir}/libX11-xcb.so.1"
 
+    # Cannot use vendored Qt libraries due to problem with xkbcommon
+    rm "$out/${appdir}/"libQt5*.so.5
     rm "$out/${appdir}/qt.conf"
     rm -fr "$out/${appdir}/plugins"
 
@@ -102,40 +96,36 @@ in stdenv.mkDerivation {
 
     mkdir -p "$out/bin"
     RPATH="${ldpath}:$out/${appdir}"
+    chmod 755 $out/${appdir}/dropbox
     makeWrapper "$out/${appdir}/dropbox" "$out/bin/dropbox" \
       --prefix LD_LIBRARY_PATH : "$RPATH"
+
+
+    rm $out/${appdir}/wmctrl
+    ln -s ${wmctrl}/bin/wmctrl $out/${appdir}/wmctrl
+
+    runHook postInstall
   '';
 
-  fixupPhase = ''
+  preFixup = ''
     INTERP=$(cat $NIX_CC/nix-support/dynamic-linker)
     RPATH="${ldpath}:$out/${appdir}"
     getType='s/ *Type: *\([A-Z]*\) (.*/\1/'
-    find "$out/${appdir}" -type f -a -perm -0100 -print | while read obj; do
+    find "$out/${appdir}" -type f -print | while read obj; do
         dynamic=$(readelf -S "$obj" 2>/dev/null | grep "DYNAMIC" || true)
-
         if [[ -n "$dynamic" ]]; then
-            type=$(readelf -h "$obj" 2>/dev/null | grep 'Type:' | sed -e "$getType")
 
-            if [[ "$type" == "EXEC" ]]; then
-
+            if readelf -l "$obj" 2>/dev/null | grep "INTERP" >/dev/null; then
                 echo "patching interpreter path in $type $obj"
                 patchelf --set-interpreter "$INTERP" "$obj"
+            fi
+
+            type=$(readelf -h "$obj" 2>/dev/null | grep 'Type:' | sed -e "$getType")
+            if [ "$type" == "EXEC" ] || [ "$type" == "DYN" ]; then
 
                 echo "patching RPATH in $type $obj"
                 oldRPATH=$(patchelf --print-rpath "$obj")
                 patchelf --set-rpath "''${oldRPATH:+$oldRPATH:}$RPATH" "$obj"
-
-                echo "shrinking RPATH in $type $obj"
-                patchelf --shrink-rpath "$obj"
-
-            elif [[ "$type" == "DYN" ]]; then
-
-                echo "patching RPATH in $type $obj"
-                oldRPATH=$(patchelf --print-rpath "$obj")
-                patchelf --set-rpath "''${oldRPATH:+$oldRPATH:}$RPATH" "$obj"
-
-                echo "shrinking RPATH in $type $obj"
-                patchelf --shrink-rpath "$obj"
 
             else
 
@@ -144,12 +134,15 @@ in stdenv.mkDerivation {
             fi
         fi
     done
+
+    paxmark m $out/${appdir}/dropbox
   '';
 
-  meta = {
-    homepage = "http://www.dropbox.com";
+  meta = with lib; {
     description = "Online stored folders (daemon version)";
-    maintainers = with stdenv.lib.maintainers; [ ttuegel ];
-    platforms = [ "i686-linux" "x86_64-linux" ];
+    homepage    = http://www.dropbox.com;
+    maintainers = with maintainers; [ ttuegel ];
+    license     = licenses.unfree;
+    platforms   = [ "i686-linux" "x86_64-linux" ];
   };
 }

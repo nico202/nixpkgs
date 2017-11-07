@@ -1,14 +1,25 @@
-{ stdenv, fetchurl, nasm }:
+{ stdenv, fetchurl, nasm
+, hostPlatform
+}:
 
 stdenv.mkDerivation rec {
-  name = "libjpeg-turbo-1.4.2";
+  name = "libjpeg-turbo-${version}";
+  version = "1.5.2";
 
   src = fetchurl {
     url = "mirror://sourceforge/libjpeg-turbo/${name}.tar.gz";
-    sha256 = "0gi349hp1x7mb98s4mf66sb2xay2kjjxj9ihrriw0yiy0k9va6sj";
-  };
+    sha256 = "0a5m0psfp5952y5vrcs0nbdz1y9wqzg2ms0xwrx752034wxr964h";
+  }; # github releases still need autotools, surprisingly
 
-  buildInputs = [ nasm ];
+  patches =
+    stdenv.lib.optional (hostPlatform.libc or null == "msvcrt")
+      ./mingw-boolean.patch;
+
+  outputs = [ "bin" "dev" "out" "man" "doc" ];
+
+  nativeBuildInputs = [ nasm ];
+
+  enableParallelBuilding = true;
 
   doCheck = true;
   checkTarget = "test";

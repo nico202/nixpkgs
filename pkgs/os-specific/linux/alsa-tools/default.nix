@@ -1,18 +1,20 @@
-{ stdenv, fetchurl, alsaLib, pkgconfig, gtk, gtk3, fltk13 }:
+{ stdenv, fetchurl, alsaLib, pkgconfig, gtk2, gtk3, fltk13 }:
+# Comes from upstream as as bundle of several tools,
+# some use gtk2, some gtk3 (and some even fltk13).
 
 stdenv.mkDerivation rec {
   name = "alsa-tools-${version}";
-  version = "1.0.29";
+  version = "1.1.3";
 
   src = fetchurl {
     urls = [
       "ftp://ftp.alsa-project.org/pub/tools/${name}.tar.bz2"
       "http://alsa.cybermirror.org/tools/${name}.tar.bz2"
     ];
-    sha256 = "1lgvyb81md25s9ciswpdsbibmx9s030kvyylf0673w3kbamz1awl";
+    sha256 = "02b75fyfmm9m2iz59d3xa97cas4f697a4pzdxn1i64kjd36iv3yq";
   };
 
-  buildInputs = [ alsaLib pkgconfig gtk gtk3 fltk13 ];
+  buildInputs = [ alsaLib pkgconfig gtk2 gtk3 fltk13 ];
 
   patchPhase = ''
     export tools="as10k1 hda-verb hdspmixer echomixer hdajackretask hdspconf hwmixvolume mixartloader rmedigicontrol sscape_ctl vxloader envy24control hdajacksensetest hdsploader ld10k1 pcxhrloader sb16_csp us428control"

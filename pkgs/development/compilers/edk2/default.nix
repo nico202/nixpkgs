@@ -1,6 +1,7 @@
-{ stdenv, fetchgit, libuuid, pythonFull, iasl }:
+{ stdenv, fetchFromGitHub, libuuid, python2, iasl }:
 
 let
+  pythonEnv = python2.withPackages(ps: [ps.tkinter]);
 
 targetArch = if stdenv.isi686 then
   "IA32"
@@ -11,18 +12,19 @@ else
 
 edk2 = stdenv.mkDerivation {
   name = "edk2-2014-12-10";
-  
-  src = fetchgit {
-    url = git://github.com/tianocore/edk2;
-    rev = "684a565a04";
-    sha256 = "1l46396f48v91z5b8lh3b0f0lcd7z5f86i1nrpc7l5gf7gx3117j";
+
+  src = fetchFromGitHub {
+    owner = "tianocore";
+    repo = "edk2";
+    rev = "vUDK2017";
+    sha256 = "0sswa028644yr8fbl8j6rhrdm717fj29h4dys3ygklmjhss90a2g";
   };
 
-  buildInputs = [ libuuid pythonFull ];
+  buildInputs = [ libuuid pythonEnv];
 
-  buildPhase = ''
-    make -C BaseTools
-  '';
+  makeFlags = "-C BaseTools";
+
+  hardeningDisable = [ "format" "fortify" ];
 
   installPhase = ''
     mkdir -vp $out
@@ -33,14 +35,14 @@ edk2 = stdenv.mkDerivation {
 
   meta = {
     description = "Intel EFI development kit";
-    homepage = http://sourceforge.net/projects/edk2/;
+    homepage = https://sourceforge.net/projects/edk2/;
     license = stdenv.lib.licenses.bsd2;
     platforms = ["x86_64-linux" "i686-linux"];
   };
 
   passthru = {
     setup = projectDscPath: attrs: {
-      buildInputs = [ pythonFull ] ++
+      buildInputs = [ pythonEnv ] ++
         stdenv.lib.optionals (attrs ? buildInputs) attrs.buildInputs;
 
       configurePhase = ''

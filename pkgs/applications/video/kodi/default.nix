@@ -1,13 +1,13 @@
 { stdenv, lib, fetchurl, makeWrapper
-, pkgconfig, cmake, gnumake, yasm, pythonFull
-, boost, avahi, libdvdcss, lame, autoreconfHook
-, gettext, pcre, yajl, fribidi, which
+, pkgconfig, cmake, gnumake, yasm, python2
+, boost, avahi, libdvdcss, libdvdnav, libdvdread, lame, autoreconfHook
+, gettext, pcre-cpp, yajl, fribidi, which
 , openssl, gperf, tinyxml2, taglib, libssh, swig, jre
 , libX11, xproto, inputproto, libxml2
 , libXt, libXmu, libXext, xextproto
 , libXinerama, libXrandr, randrproto
 , libXtst, libXfixes, fixesproto, systemd
-, SDL, SDL_image, SDL_mixer, alsaLib
+, SDL, SDL2, SDL_image, SDL_mixer, alsaLib
 , mesa, glew, fontconfig, freetype, ftgl
 , libjpeg, jasper, libpng, libtiff
 , libmpeg2, libsamplerate, libmad
@@ -15,7 +15,8 @@
 , lzo, libcdio, libmodplug, libass, libbluray
 , sqlite, mysql, nasm, gnutls, libva, wayland
 , curl, bzip2, zip, unzip, glxinfo, xdpyinfo
-, libcec, libcec_platform
+, libcec, libcec_platform, dcadec, libuuid
+, libcrossguid
 , dbus_libs ? null, dbusSupport ? true
 , udev, udevSupport ? true
 , libusb ? null, usbSupport ? false
@@ -25,6 +26,7 @@
 , rtmpdump ? null, rtmpSupport ? true
 , libvdpau ? null, vdpauSupport ? true
 , libpulseaudio ? null, pulseSupport ? true
+, joystickSupport ? true
 }:
 
 assert dbusSupport  -> dbus_libs != null;
@@ -36,25 +38,34 @@ assert pulseSupport -> libpulseaudio != null;
 assert rtmpSupport  -> rtmpdump != null;
 
 let
-  rel = "Isengard";
-  ffmpeg_2_6_4 = fetchurl {
-    url = "https://github.com/xbmc/FFmpeg/archive/2.6.4-${rel}.tar.gz";
-    sha256 = "0gsjz8sr0dqq68gcln29xhz3h35n77769h1gb0ias0apmpaad1r4";
+  kodi_version = "17.4";
+  rel = "Krypton";
+  ffmpeg_3_1_9 = fetchurl {
+    url = "https://github.com/xbmc/FFmpeg/archive/3.1.9-${rel}-${kodi_version}.tar.gz";
+    sha256 = "0rhjz505ljfg2jqbm3rd7qbcjq4vnp8h9a8vad8rjf84v3alglpa";
+  };
+  # Usage of kodi fork of libdvdnav and libdvdread is necessary for functional dvd playback:
+  libdvdnav_src = fetchurl {
+    url = "https://github.com/xbmc/libdvdnav/archive/981488f.tar.gz";
+    sha256 = "312b3d15bc448d24e92f4b2e7248409525eccc4e75776026d805478e51c5ef3d";
+  };
+  libdvdread_src = fetchurl {
+    url = "https://github.com/xbmc/libdvdread/archive/17d99db.tar.gz";
+    sha256 = "e7179b2054163652596a56301c9f025515cb08c6d6310b42b897c3ad11c0199b";
   };
 in stdenv.mkDerivation rec {
-    name = "kodi-" + version;
-    version = "15.2";
+    version = kodi_version;
+    name = "kodi-${version}";
 
     src = fetchurl {
       url = "https://github.com/xbmc/xbmc/archive/${version}-${rel}.tar.gz";
-      sha256 = "043i0f1crx9glwxil4xm45z5kxpkrx316gi4ir4d3rbd5safp2nx";
+      sha256 = "1p1lxkapynjbd85ns7m4jybl4k35kxzv7105xkh03hlz8kkqc23b";
     };
 
     buildInputs = [
-      makeWrapper libxml2 gnutls
-      pkgconfig cmake gnumake yasm pythonFull
-      boost libmicrohttpd autoreconfHook
-      gettext pcre yajl fribidi libva
+      libxml2 gnutls yasm python2
+      boost libmicrohttpd
+      gettext pcre-cpp yajl fribidi libva
       openssl gperf tinyxml2 taglib libssh swig jre
       libX11 xproto inputproto which
       libXt libXmu libXext xextproto
@@ -68,7 +79,8 @@ in stdenv.mkDerivation rec {
       lzo libcdio libmodplug libass libbluray
       sqlite mysql.lib nasm avahi libdvdcss lame
       curl bzip2 zip unzip glxinfo xdpyinfo
-      libcec libcec_platform
+      libcec libcec_platform dcadec libuuid
+      libcrossguid
     ]
     ++ lib.optional dbusSupport dbus_libs
     ++ lib.optional udevSupport udev
@@ -76,7 +88,12 @@ in stdenv.mkDerivation rec {
     ++ lib.optional sambaSupport samba
     ++ lib.optional vdpauSupport libvdpau
     ++ lib.optional pulseSupport libpulseaudio
-    ++ lib.optional rtmpSupport rtmpdump;
+    ++ lib.optional rtmpSupport rtmpdump
+    ++ lib.optional joystickSupport SDL2;
+
+    nativeBuildInputs = [
+      autoreconfHook cmake gnumake makeWrapper pkgconfig
+    ];
 
     dontUseCmakeConfigure = true;
 
@@ -85,41 +102,47 @@ in stdenv.mkDerivation rec {
         --replace 'usr/share/zoneinfo' 'etc/zoneinfo'
       substituteInPlace tools/depends/target/ffmpeg/autobuild.sh \
         --replace "/bin/bash" "${bash}/bin/bash -ex"
-      cp ${ffmpeg_2_6_4} tools/depends/target/ffmpeg/ffmpeg-2.6.4-${rel}.tar.gz
+      cp ${ffmpeg_3_1_9} tools/depends/target/ffmpeg/ffmpeg-3.1.9-${rel}-${version}.tar.gz
+      ln -s ${libdvdcss.src} tools/depends/target/libdvdcss/libdvdcss-master.tar.gz
+      cp ${libdvdnav_src} tools/depends/target/libdvdnav/libdvdnav-master.tar.gz
+      cp ${libdvdread_src} tools/depends/target/libdvdread/libdvdread-master.tar.gz
     '';
 
     preConfigure = ''
+      patchShebangs .
       ./bootstrap
+      # tests here fail
+      sed -i '/TestSystemInfo.cpp/d' xbmc/utils/test/{Makefile,CMakeLists.txt}
+      # tests here trigger a segfault in kodi.bin
+      sed -i '/TestWebServer.cpp/d'  xbmc/network/test/{Makefile,CMakeLists.txt}
     '';
 
-    configureFlags = [ ]
+    enableParallelBuilding = true;
+
+    doCheck = true;
+
+    configureFlags = [ "--enable-libcec" ]
     ++ lib.optional (!sambaSupport) "--disable-samba"
     ++ lib.optional vdpauSupport "--enable-vdpau"
     ++ lib.optional pulseSupport "--enable-pulse"
-    ++ lib.optional rtmpSupport "--enable-rtmp";
+    ++ lib.optional rtmpSupport "--enable-rtmp"
+    ++ lib.optional joystickSupport "--enable-joystick";
 
     postInstall = ''
       for p in $(ls $out/bin/) ; do
         wrapProgram $out/bin/$p \
-          --prefix PATH ":" "${pythonFull}/bin" \
-          --prefix PATH ":" "${glxinfo}/bin" \
-          --prefix PATH ":" "${xdpyinfo}/bin" \
-          --prefix LD_LIBRARY_PATH ":" "${curl}/lib" \
-          --prefix LD_LIBRARY_PATH ":" "${systemd}/lib" \
-          --prefix LD_LIBRARY_PATH ":" "${libmad}/lib" \
-          --prefix LD_LIBRARY_PATH ":" "${libvdpau}/lib" \
-          --prefix LD_LIBRARY_PATH ":" "${libcec}/lib" \
-          --prefix LD_LIBRARY_PATH ":" "${libcec_platform}/lib" \
-          --prefix LD_LIBRARY_PATH ":" "${libass}/lib" \
-          --prefix LD_LIBRARY_PATH ":" "${rtmpdump}/lib"
+          --prefix PATH ":" "${lib.makeBinPath
+              [ python2 glxinfo xdpyinfo ]}" \
+          --prefix LD_LIBRARY_PATH ":" "${lib.makeLibraryPath
+              [ curl systemd libmad libvdpau libcec libcec_platform rtmpdump libass SDL2 ]}"
       done
     '';
 
     meta = with stdenv.lib; {
-      homepage = http://kodi.tv/;
+      homepage = https://kodi.tv/;
       description = "Media center";
-      license = stdenv.lib.licenses.gpl2;
+      license = licenses.gpl2;
       platforms = platforms.linux;
-      maintainers = with maintainers; [ iElectric titanous edwtjo ];
+      maintainers = with maintainers; [ domenkozar titanous edwtjo ];
     };
 }

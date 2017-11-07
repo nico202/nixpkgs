@@ -21,7 +21,7 @@ stdenv.mkDerivation rec {
 
   # Fix broken libtool file
   preFixup = stdenv.lib.optionalString (!stdenv.isDarwin) ''
-    sed 's,-lcrypto,-L${openssl}/lib -lcrypto,' -i $out/lib/libtspi.la
+    sed 's,-lcrypto,-L${openssl.out}/lib -lcrypto,' -i $out/lib/libtspi.la
   '';
 
   meta = with stdenv.lib; {
@@ -29,7 +29,7 @@ stdenv.mkDerivation rec {
     homepage    = http://trousers.sourceforge.net/;
     license     = licenses.cpl10;
     maintainers = [ maintainers.ak ];
-    platforms   = platforms.unix;
+    platforms   = platforms.linux;
   };
 }
 

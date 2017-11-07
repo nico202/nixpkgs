@@ -2,11 +2,12 @@
 , libX11, libXext, libXinerama, libXdmcp, libXt }:
 
 stdenv.mkDerivation rec {
+  name = "xlockmore-5.55";
 
-  name = "xlockmore-5.46";
   src = fetchurl {
-    url = "http://www.tux.org/~bagleyd/xlock/${name}.tar.xz";
-    sha256 = "1ps0dmnh912x8mwns94y2607xk90rjxrjn5s1pkmmpjg5h9bxcrj";
+    url = "http://sillycycle.com/xlock/${name}.tar.xz";
+    sha256 = "1y3f76rq2nd10fgi2rx81aj6pijglmm661vjsxi05hpg35dzmwfl";
+    curlOpts = "--user-agent 'Mozilla/5.0'";
   };
 
   # Optionally, it can use GTK+.

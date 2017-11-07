@@ -1,10 +1,11 @@
-{ stdenv, fetchFromGitHub, cmake, gettext, glib, libmsgpack, libtermkey
-, libtool, libuv, lpeg, lua, luajit, luaMessagePack, luabitop, ncurses, perl
-, pkgconfig, unibilium, makeWrapper, vimUtils
+{ stdenv, fetchFromGitHub, cmake, gettext, libmsgpack, libtermkey
+, libtool, libuv, luajit, luajitPackages, luaPackages, ncurses, perl, pkgconfig
+, unibilium, makeWrapper, vimUtils, xsel, gperf
 
 , withPython ? true, pythonPackages, extraPythonPackages ? []
 , withPython3 ? true, python3Packages, extraPython3Packages ? []
 , withJemalloc ? true, jemalloc
+, withRuby ? true, bundlerEnv
 
 , withPyGUI ? false
 , vimAlias ? false
@@ -15,17 +16,16 @@ with stdenv.lib;
 
 let
 
-  version = "0.1.1";
-
   # Note: this is NOT the libvterm already in nixpkgs, but some NIH silliness:
-  neovimLibvterm = let version = "2015-11-06"; in stdenv.mkDerivation {
+  neovimLibvterm = stdenv.mkDerivation rec {
     name = "neovim-libvterm-${version}";
+    version = "2016-10-07";
 
     src = fetchFromGitHub {
-      sha256 = "0f9r0wnr9ajcdd6as24igmch0n8s1annycb9f4k0vg6fngwaypy9";
-      rev = "04781d37ce5af3f580376dc721bd3b89c434966b";
-      repo = "libvterm";
       owner = "neovim";
+      repo = "libvterm";
+      rev = "5a748f97fbf27003e141002b58933a99f3addf8d";
+      sha256 = "1fnd57f5n9h7z50a4vj7g96k6ndsdknjqsibgnxi9ndhyz244qbx";
     };
 
     buildInputs = [ perl ];
@@ -40,51 +40,70 @@ let
       description = "VT220/xterm/ECMA-48 terminal emulator library";
       homepage = http://www.leonerd.org.uk/code/libvterm/;
       license = licenses.mit;
-      maintainers = with maintainers; [ nckx ];
+      maintainers = with maintainers; [ nckx garbas ];
       platforms = platforms.unix;
     };
   };
 
+  rubyEnv = bundlerEnv {
+    name = "neovim-ruby-env";
+    gemdir = ./ruby_provider;
+  };
+
+  rubyWrapper = ''--suffix PATH : \"${rubyEnv}/bin\" '' +
+                ''--suffix GEM_HOME : \"${rubyEnv}/${rubyEnv.ruby.gemPath}\" '';
+
+  pluginPythonPackages = if configure == null then [] else builtins.concatLists
+    (map ({ pythonDependencies ? [], ...}: pythonDependencies)
+         (vimUtils.requiredPlugins configure));
   pythonEnv = pythonPackages.python.buildEnv.override {
     extraLibs = (
         if withPyGUI
           then [ pythonPackages.neovim_gui ]
           else [ pythonPackages.neovim ]
-      ) ++ extraPythonPackages;
+      ) ++ extraPythonPackages ++ pluginPythonPackages;
     ignoreCollisions = true;
   };
+  pythonWrapper = ''--cmd \"let g:python_host_prog='$out/bin/nvim-python'\" '';
 
+  pluginPython3Packages = if configure == null then [] else builtins.concatLists
+    (map ({ python3Dependencies ? [], ...}: python3Dependencies)
+         (vimUtils.requiredPlugins configure));
   python3Env = python3Packages.python.buildEnv.override {
-    extraLibs = [ python3Packages.neovim ] ++ extraPython3Packages;
+    extraLibs = [ python3Packages.neovim ] ++ extraPython3Packages ++ pluginPython3Packages;
     ignoreCollisions = true;
   };
+  python3Wrapper = ''--cmd \"let g:python3_host_prog='$out/bin/nvim-python3'\" '';
+  pythonFlags = optionalString (withPython || withPython3) ''--add-flags "${
+    (optionalString withPython pythonWrapper) +
+    (optionalString withPython3 python3Wrapper)
+  }"'';
 
-  neovim = stdenv.mkDerivation {
+  neovim = stdenv.mkDerivation rec {
     name = "neovim-${version}";
+    version = "0.2.0";
 
     src = fetchFromGitHub {
-      sha256 = "0crswjslp687yp1cpn7nmm0j2sccqhcxryzxv1s81cgpai0fzf60";
-      rev = "v${version}";
-      repo = "neovim";
       owner = "neovim";
+      repo = "neovim";
+      rev = "v${version}";
+      sha256 = "0fhjkgjwqqmzbfn9wk10l2vq9v74zkriz5j12b1rx0gdwzlfybn8";
     };
 
     enableParallelBuilding = true;
 
     buildInputs = [
-      glib
       libtermkey
       libuv
-      luajit
-      lua
-      lpeg
-      luaMessagePack
-      luabitop
       libmsgpack
       ncurses
       neovimLibvterm
       unibilium
-    ] ++ optional withJemalloc jemalloc;
+      luajit
+      luaPackages.lua
+      gperf
+    ] ++ optional withJemalloc jemalloc
+      ++ lualibs;
 
     nativeBuildInputs = [
       cmake
@@ -93,8 +112,17 @@ let
       pkgconfig
     ];
 
-    LUA_CPATH="${lpeg}/lib/lua/${lua.luaversion}/?.so;${luabitop}/lib/lua/5.2/?.so";
-    LUA_PATH="${luaMessagePack}/share/lua/5.1/?.lua";
+    LUA_PATH = stdenv.lib.concatStringsSep ";" (map luaPackages.getLuaPath lualibs);
+    LUA_CPATH = stdenv.lib.concatStringsSep ";" (map luaPackages.getLuaCPath lualibs);
+
+    lualibs = [ luaPackages.mpack luaPackages.lpeg luajitPackages.lpeg luaPackages.luabitop ];
+
+    cmakeFlags = [
+      "-DLUA_PRG=${luaPackages.lua}/bin/lua"
+    ];
+
+    # triggers on buffer overflow bug while running tests
+    hardeningDisable = [ "fortify" ];
 
     preConfigure = stdenv.lib.optionalString stdenv.isDarwin ''
       export DYLD_LIBRARY_PATH=${jemalloc}/lib
@@ -106,6 +134,7 @@ let
       install_name_tool -change libjemalloc.1.dylib \
                 ${jemalloc}/lib/libjemalloc.1.dylib \
                 $out/bin/nvim
+      sed -i -e "s|'xsel|'${xsel}/bin/xsel|" $out/share/nvim/runtime/autoload/provider/clipboard.vim
     '' + optionalString withPython ''
       ln -s ${pythonEnv}/bin/python $out/bin/nvim-python
     '' + optionalString withPyGUI ''
@@ -113,13 +142,8 @@ let
         --prefix PATH : "$out/bin"
     '' + optionalString withPython3 ''
       ln -s ${python3Env}/bin/python3 $out/bin/nvim-python3
-    '' + optionalString (withPython || withPython3) ''
-        wrapProgram $out/bin/nvim --add-flags "${
-          (optionalString withPython
-            ''--cmd \"let g:python_host_prog='$out/bin/nvim-python'\" '') +
-          (optionalString withPython3
-            ''--cmd \"let g:python3_host_prog='$out/bin/nvim-python3'\" '')
-        }"
+    '' + optionalString (withPython || withPython3 || withRuby) ''
+      wrapProgram $out/bin/nvim ${rubyWrapper + pythonFlags}
     '';
 
     meta = {
@@ -132,21 +156,24 @@ let
           modifications to the core source
         - Improve extensibility with a new plugin architecture
       '';
-      homepage    = http://www.neovim.io;
+      homepage    = https://www.neovim.io;
       # "Contributions committed before b17d96 by authors who did not sign the
       # Contributor License Agreement (CLA) remain under the Vim license.
       # Contributions committed after b17d96 are licensed under Apache 2.0 unless
       # those contributions were copied from Vim (identified in the commit logs
       # by the vim-patch token). See LICENSE for details."
       license = with licenses; [ asl20 vim ];
-      maintainers = with maintainers; [ manveru nckx garbas ];
+      maintainers = with maintainers; [ manveru garbas ];
       platforms   = platforms.unix;
     };
   };
 
 in if (vimAlias == false && configure == null) then neovim else stdenv.mkDerivation {
-  name = "neovim-${version}-configured";
+  name = "neovim-${neovim.version}-configured";
+  inherit (neovim) version meta;
+
   nativeBuildInputs = [ makeWrapper ];
+
   buildCommand = ''
     mkdir -p $out/bin
     for item in ${neovim}/bin/*; do

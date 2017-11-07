@@ -1,4 +1,4 @@
-set -e
+set -eu
 set -o pipefail
 
 : ${outputs:=out}
@@ -13,14 +13,22 @@ set -o pipefail
 # code). The hooks for <hookName> are the shell function or variable
 # <hookName>, and the values of the shell array ‘<hookName>Hooks’.
 runHook() {
+    local oldOpts="$(shopt -po nounset)"
+    set -u # May be called from elsewhere, so do `set -u`.
+
     local hookName="$1"
     shift
-    local var="$hookName"
-    if [[ "$hookName" =~ Hook$ ]]; then var+=s; else var+=Hooks; fi
-    eval "local -a dummy=(\"\${$var[@]}\")"
-    for hook in "_callImplicitHook 0 $hookName" "${dummy[@]}"; do
+    local hooksSlice="${hookName%Hook}Hooks[@]"
+
+    local hook
+    # Hack around old bash being bad and thinking empty arrays are
+    # undefined.
+    for hook in "_callImplicitHook 0 $hookName" ${!hooksSlice+"${!hooksSlice}"}; do
         _eval "$hook" "$@"
+        set -u # To balance `_eval`
     done
+
+    eval "${oldOpts}"
     return 0
 }
 
@@ -28,17 +36,25 @@ runHook() {
 # Run all hooks with the specified name, until one succeeds (returns a
 # zero exit code). If none succeed, return a non-zero exit code.
 runOneHook() {
+    local oldOpts="$(shopt -po nounset)"
+    set -u # May be called from elsewhere, so do `set -u`.
+
     local hookName="$1"
     shift
-    local var="$hookName"
-    if [[ "$hookName" =~ Hook$ ]]; then var+=s; else var+=Hooks; fi
-    eval "local -a dummy=(\"\${$var[@]}\")"
-    for hook in "_callImplicitHook 1 $hookName" "${dummy[@]}"; do
+    local hooksSlice="${hookName%Hook}Hooks[@]"
+
+    local hook ret=1
+    # Hack around old bash like above
+    for hook in "_callImplicitHook 1 $hookName" ${!hooksSlice+"${!hooksSlice}"}; do
         if _eval "$hook" "$@"; then
-            return 0
+            ret=0
+            break
         fi
+        set -u # To balance `_eval`
     done
-    return 1
+
+    eval "${oldOpts}"
+    return "$ret"
 }
 
 
@@ -48,56 +64,62 @@ runOneHook() {
 # environment variables) and from shell scripts (as functions). If you
 # want to allow multiple hooks, use runHook instead.
 _callImplicitHook() {
+    set -u
     local def="$1"
     local hookName="$2"
-    case "$(type -t $hookName)" in
-        (function|alias|builtin) $hookName;;
-        (file) source $hookName;;
+    case "$(type -t "$hookName")" in
+        (function|alias|builtin)
+            set +u
+            "$hookName";;
+        (file)
+            set +u
+            source "$hookName";;
         (keyword) :;;
-        (*) if [ -z "${!hookName}" ]; then return "$def"; else eval "${!hookName}"; fi;;
+        (*) if [ -z "${!hookName:-}" ]; then
+                return "$def";
+            else
+                set +u
+                eval "${!hookName}"
+            fi;;
     esac
+    # `_eval` expects hook to need nounset disable and leave it
+    # disabled anyways, so Ok to to delegate. The alternative of a
+    # return trap is no good because it would affect nested returns.
 }
 
 
 # A function wrapper around ‘eval’ that ensures that ‘return’ inside
-# hooks exits the hook, not the caller.
+# hooks exits the hook, not the caller. Also will only pass args if
+# command can take them
 _eval() {
-    local code="$1"
-    shift
-    if [ "$(type -t $code)" = function ]; then
-        eval "$code \"\$@\""
+    if [ "$(type -t "$1")" = function ]; then
+        set +u
+        "$@" # including args
     else
-        eval "$code"
+        set +u
+        eval "$1"
     fi
+    # `run*Hook` reenables `set -u`
 }
 
 
 ######################################################################
 # Logging.
 
-nestingLevel=0
+# Obsolete.
+stopNest() { true; }
+header() { echo "$1"; }
+closeNest() { true; }
 
-startNest() {
-    nestingLevel=$(($nestingLevel + 1))
-    echo -en "\033[$1p"
-}
-
-stopNest() {
-    nestingLevel=$(($nestingLevel - 1))
-    echo -en "\033[q"
-}
-
-header() {
-    startNest "$2"
-    echo "$1"
-}
-
-# Make sure that even when we exit abnormally, the original nesting
-# level is properly restored.
-closeNest() {
-    while [ $nestingLevel -gt 0 ]; do
-        stopNest
-    done
+# Prints a command such that all word splits are unambiguous. We need
+# to split the command in three parts because the middle format string
+# will be, and must be, repeated for each argument. The first argument
+# goes before the ':' and is just for convenience.
+echoCmd() {
+    printf "%s:" "$1"
+    shift
+    printf ' %q' "$@"
+    echo
 }
 
 
@@ -105,12 +127,10 @@ closeNest() {
 # Error handling.
 
 exitHandler() {
-    exitCode=$?
+    exitCode="$?"
     set +e
 
-    closeNest
-
-    if [ -n "$showBuildStats" ]; then
+    if [ -n "${showBuildStats:-}" ]; then
         times > "$NIX_BUILD_TOP/.times"
         local -a times=($(cat "$NIX_BUILD_TOP/.times"))
         # Print the following statistics:
@@ -118,20 +138,20 @@ exitHandler() {
         # - system time for the shell
         # - user time for all child processes
         # - system time for all child processes
-        echo "build time elapsed: " ${times[*]}
+        echo "build time elapsed: " "${times[@]}"
     fi
 
-    if [ $exitCode != 0 ]; then
+    if (( "$exitCode" != 0 )); then
         runHook failureHook
 
         # If the builder had a non-zero exit code and
         # $succeedOnFailure is set, create the file
         # ‘$out/nix-support/failed’ to signal failure, and exit
         # normally.  Otherwise, return the original exit code.
-        if [ -n "$succeedOnFailure" ]; then
+        if [ -n "${succeedOnFailure:-}" ]; then
             echo "build failed with exit code $exitCode (ignored)"
             mkdir -p "$out/nix-support"
-            printf "%s" $exitCode > "$out/nix-support/failed"
+            printf "%s" "$exitCode" > "$out/nix-support/failed"
             exit 0
         fi
 
@@ -139,7 +159,7 @@ exitHandler() {
         runHook exitHook
     fi
 
-    exit $exitCode
+    exit "$exitCode"
 }
 
 trap "exitHandler" EXIT
@@ -150,11 +170,11 @@ trap "exitHandler" EXIT
 
 
 addToSearchPathWithCustomDelimiter() {
-    local delimiter=$1
-    local varName=$2
-    local dir=$3
+    local delimiter="$1"
+    local varName="$2"
+    local dir="$3"
     if [ -d "$dir" ]; then
-        eval export ${varName}=${!varName}${!varName:+$delimiter}${dir}
+        export "${varName}=${!varName:+${!varName}${delimiter}}${dir}"
     fi
 }
 
@@ -174,14 +194,66 @@ ensureDir() {
 }
 
 
-installBin() {
-    mkdir -p $out/bin
-    cp "$@" $out/bin
+# Add $1/lib* into rpaths.
+# The function is used in multiple-outputs.sh hook,
+# so it is defined here but tried after the hook.
+_addRpathPrefix() {
+    if [ "${NIX_NO_SELF_RPATH:-0}" != 1 ]; then
+        export NIX_LDFLAGS="-rpath $1/lib $NIX_LDFLAGS"
+        if [ -n "${NIX_LIB64_IN_SELF_RPATH:-}" ]; then
+            export NIX_LDFLAGS="-rpath $1/lib64 $NIX_LDFLAGS"
+        fi
+        if [ -n "${NIX_LIB32_IN_SELF_RPATH:-}" ]; then
+            export NIX_LDFLAGS="-rpath $1/lib32 $NIX_LDFLAGS"
+        fi
+    fi
 }
 
+# Return success if the specified file is an ELF object.
+isELF() {
+    local fn="$1"
+    local fd
+    local magic
+    exec {fd}< "$fn"
+    read -r -n 4 -u "$fd" magic
+    exec {fd}<&-
+    if [[ "$magic" =~ ELF ]]; then return 0; else return 1; fi
+}
+
+# Return success if the specified file is a script (i.e. starts with
+# "#!").
+isScript() {
+    local fn="$1"
+    local fd
+    local magic
+    if ! [ -x /bin/sh ]; then return 0; fi
+    exec {fd}< "$fn"
+    read -r -n 2 -u "$fd" magic
+    exec {fd}<&-
+    if [[ "$magic" =~ \#! ]]; then return 0; else return 1; fi
+}
+
+# printf unfortunately will print a trailing newline regardless
+printLines() {
+    [[ "$#" -gt 0 ]] || return 0
+    printf '%s\n' "$@"
+}
+
+printWords() {
+    [[ "$#" -gt 0 ]] || return 0
+    printf '%s ' "$@"
+}
 
 ######################################################################
 # Initialisation.
+
+
+# Set a fallback default value for SOURCE_DATE_EPOCH, used by some
+# build tools to provide a deterministic substitute for the "current"
+# time. Note that 1 = 1970-01-01 00:00:01. We don't use 0 because it
+# confuses some applications.
+export SOURCE_DATE_EPOCH
+: ${SOURCE_DATE_EPOCH:=1}
 
 
 # Wildcard expansions that don't match should expand to an empty list.
@@ -194,23 +266,27 @@ shopt -s nullglob
 PATH=
 for i in $initialPath; do
     if [ "$i" = / ]; then i=; fi
-    addToSearchPath PATH $i/bin
-    addToSearchPath PATH $i/sbin
+    addToSearchPath PATH "$i/bin"
 done
 
-if [ "$NIX_DEBUG" = 1 ]; then
+if [ "${NIX_DEBUG:-}" = 1 ]; then
     echo "initial path: $PATH"
 fi
 
 
 # Check that the pre-hook initialised SHELL.
-if [ -z "$SHELL" ]; then echo "SHELL not set"; exit 1; fi
+if [ -z "${SHELL:-}" ]; then echo "SHELL not set"; exit 1; fi
 BASH="$SHELL"
 export CONFIG_SHELL="$SHELL"
 
 
+# Dummy implementation of the paxmark function. On Linux, this is
+# overwritten by paxctl's setup hook.
+paxmark() { true; }
+
+
 # Execute the pre-hook.
-if [ -z "$shell" ]; then export shell=$SHELL; fi
+if [ -z "${shell:-}" ]; then export shell="$SHELL"; fi
 runHook preHook
 
 
@@ -223,16 +299,21 @@ runHook addInputsHook
 # Recursively find all build inputs.
 findInputs() {
     local pkg="$1"
-    local var=$2
-    local propagatedBuildInputsFile=$3
+    local var="$2"
+    local propagatedBuildInputsFile="$3"
 
-    case ${!var} in
-        *\ $pkg\ *)
-            return 0
-            ;;
+    # TODO(@Ericson2314): Restore using associative array once Darwin
+    # nix-shell doesn't use impure bash. This should replace the O(n)
+    # case with an O(1) hash map lookup, assuming bash is implemented
+    # well :D.
+    local varSlice="$var[*]"
+    # ${..-} to hack around old bash empty array problem
+    case "${!varSlice-}" in
+        *" $pkg "*) return 0 ;;
     esac
+    unset -v varSlice
 
-    eval $var="'${!var} $pkg '"
+    eval "$var"'+=("$pkg")'
 
     if ! [ -e "$pkg" ]; then
         echo "build input $pkg does not exist" >&2
@@ -240,77 +321,93 @@ findInputs() {
     fi
 
     if [ -f "$pkg" ]; then
+        local oldOpts="$(shopt -po nounset)"
+        set +u
         source "$pkg"
+        eval "$oldOpts"
+    fi
+
+    if [ -d "$pkg/bin" ]; then
+        addToSearchPath _PATH "$pkg/bin"
     fi
 
     if [ -f "$pkg/nix-support/setup-hook" ]; then
+        local oldOpts="$(shopt -po nounset)"
+        set +u
         source "$pkg/nix-support/setup-hook"
+        eval "$oldOpts"
     fi
 
     if [ -f "$pkg/nix-support/$propagatedBuildInputsFile" ]; then
-        for i in $(cat "$pkg/nix-support/$propagatedBuildInputsFile"); do
-            findInputs "$i" $var $propagatedBuildInputsFile
+        local pkgNext
+        for pkgNext in $(< "$pkg/nix-support/$propagatedBuildInputsFile"); do
+            findInputs "$pkgNext" "$var" "$propagatedBuildInputsFile"
         done
     fi
 }
 
-crossPkgs=""
-for i in $buildInputs $defaultBuildInputs $propagatedBuildInputs; do
-    findInputs $i crossPkgs propagated-build-inputs
-done
+declare -a nativePkgs crossPkgs
+if [ -z "${crossConfig:-}" ]; then
+    # Not cross-compiling - both buildInputs (and variants like propagatedBuildInputs)
+    # are handled identically to nativeBuildInputs
+    for i in ${nativeBuildInputs:-} ${buildInputs:-} \
+             ${defaultNativeBuildInputs:-} ${defaultBuildInputs:-} \
+             ${propagatedNativeBuildInputs:-} ${propagatedBuildInputs:-}; do
+        findInputs "$i" nativePkgs propagated-native-build-inputs
+    done
+else
+    for i in ${buildInputs:-} ${defaultBuildInputs:-} ${propagatedBuildInputs:-}; do
+        findInputs "$i" crossPkgs propagated-build-inputs
+    done
 
-nativePkgs=""
-for i in $nativeBuildInputs $defaultNativeBuildInputs $propagatedNativeBuildInputs; do
-    findInputs $i nativePkgs propagated-native-build-inputs
-done
+    declare -a nativePkgs
+    for i in ${nativeBuildInputs:-} ${defaultNativeBuildInputs:-} ${propagatedNativeBuildInputs:-}; do
+        findInputs "$i" nativePkgs propagated-native-build-inputs
+    done
+fi
 
 
 # Set the relevant environment variables to point to the build inputs
 # found above.
-_addToNativeEnv() {
-    local pkg=$1
+#
+# These `depOffset`s tell the env hook what sort of dependency
+# (ignoring propagatedness) is being passed to the env hook. In a real
+# language, we'd append a closure with this information to the
+# relevant env hook array, but bash doesn't have closures, so it's
+# easier to just pass this in.
 
-    if [ -d $1/bin ]; then
-        addToSearchPath _PATH $1/bin
+_addToNativeEnv() {
+    local pkg="$1"
+    if [[ -n "${crossConfig:-}" ]]; then
+        local -i depOffset=-1
+    else
+        local -i depOffset=0
     fi
 
     # Run the package-specific hooks set by the setup-hook scripts.
     runHook envHook "$pkg"
 }
 
-for i in $nativePkgs; do
-    _addToNativeEnv $i
+# Old bash empty array hack
+for i in ${nativePkgs+"${nativePkgs[@]}"}; do
+    _addToNativeEnv "$i"
 done
 
 _addToCrossEnv() {
-    local pkg=$1
-
-    # Some programs put important build scripts (freetype-config and similar)
-    # into their crossDrv bin path. Intentionally these should go after
-    # the nativePkgs in PATH.
-    if [ -d $1/bin ]; then
-        addToSearchPath _PATH $1/bin
-    fi
+    local pkg="$1"
+    local -i depOffset=0
 
     # Run the package-specific hooks set by the setup-hook scripts.
     runHook crossEnvHook "$pkg"
 }
 
-for i in $crossPkgs; do
-    _addToCrossEnv $i
+# Old bash empty array hack
+for i in ${crossPkgs+"${crossPkgs[@]}"}; do
+    _addToCrossEnv "$i"
 done
 
 
-# Add the output as an rpath.
-if [ "$NIX_NO_SELF_RPATH" != 1 ]; then
-    export NIX_LDFLAGS="-rpath $out/lib $NIX_LDFLAGS"
-    if [ -n "$NIX_LIB64_IN_SELF_RPATH" ]; then
-        export NIX_LDFLAGS="-rpath $out/lib64 $NIX_LDFLAGS"
-    fi
-    if [ -n "$NIX_LIB32_IN_SELF_RPATH" ]; then
-        export NIX_LDFLAGS="-rpath $out/lib32 $NIX_LDFLAGS"
-    fi
-fi
+_addRpathPrefix "$out"
 
 
 # Set the TZ (timezone) environment variable, otherwise commands like
@@ -322,17 +419,17 @@ export TZ=UTC
 # Set the prefix.  This is generally $out, but it can be overriden,
 # for instance if we just want to perform a test build/install to a
 # temporary location and write a build report to $out.
-if [ -z "$prefix" ]; then
+if [ -z "${prefix:-}" ]; then
     prefix="$out";
 fi
 
-if [ "$useTempPrefix" = 1 ]; then
+if [ "${useTempPrefix:-}" = 1 ]; then
     prefix="$NIX_BUILD_TOP/tmp_prefix";
 fi
 
 
-PATH=$_PATH${_PATH:+:}$PATH
-if [ "$NIX_DEBUG" = 1 ]; then
+PATH="${_PATH-}${_PATH:+${PATH:+:}}$PATH"
+if [ "${NIX_DEBUG:-}" = 1 ]; then
     echo "final path: $PATH"
 fi
 
@@ -358,9 +455,12 @@ fi
 export NIX_BUILD_CORES
 
 
-# Dummy implementation of the paxmark function. On Linux, this is
-# overwritten by paxctl's setup hook.
-paxmark() { true; }
+# Prevent OpenSSL-based applications from using certificates in
+# /etc/ssl.
+# Leave it in shells for convenience.
+if [ -z "${SSL_CERT_FILE:-}" ] && [ -z "${IN_NIX_SHELL:-}" ]; then
+  export SSL_CERT_FILE=/no-cert-file.crt
+fi
 
 
 ######################################################################
@@ -370,36 +470,51 @@ paxmark() { true; }
 substitute() {
     local input="$1"
     local output="$2"
+    shift 2
 
-    local -a params=("$@")
+    if [ ! -f "$input" ]; then
+      echo "substitute(): ERROR: file '$input' does not exist" >&2
+      return 1
+    fi
 
-    local n p pattern replacement varName content
+    local content
+    # read returns non-0 on EOF, so we want read to fail
+    if IFS='' read -r -N 0 content < "$input"; then
+        echo "substitute(): ERROR: File \"$input\" has null bytes, won't process" >&2
+        return 1
+    fi
 
-    # a slightly hacky way to keep newline at the end
-    content="$(cat "$input"; printf "%s" X)"
-    content="${content%X}"
+    while (( "$#" )); do
+        case "$1" in
+            --replace)
+                pattern="$2"
+                replacement="$3"
+                shift 3
+                ;;
 
-    for ((n = 2; n < ${#params[*]}; n += 1)); do
-        p=${params[$n]}
+            --subst-var)
+                local varName="$2"
+                shift 2
+                # check if the used nix attribute name is a valid bash name
+                if ! [[ "$varName" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+                    echo "substitute(): ERROR: substitution variables must be valid Bash names, \"$varName\" isn't." >&2
+                    return 1
+                fi
+                pattern="@$varName@"
+                replacement="${!varName}"
+                ;;
 
-        if [ "$p" = --replace ]; then
-            pattern="${params[$((n + 1))]}"
-            replacement="${params[$((n + 2))]}"
-            n=$((n + 2))
-        fi
+            --subst-var-by)
+                pattern="@$2@"
+                replacement="$3"
+                shift 3
+                ;;
 
-        if [ "$p" = --subst-var ]; then
-            varName="${params[$((n + 1))]}"
-            pattern="@$varName@"
-            replacement="${!varName}"
-            n=$((n + 1))
-        fi
-
-        if [ "$p" = --subst-var-by ]; then
-            pattern="@${params[$((n + 1))]}@"
-            replacement="${params[$((n + 2))]}"
-            n=$((n + 2))
-        fi
+            *)
+                echo "substitute(): ERROR: Invalid command line argument: $1" >&2
+                return 1
+                ;;
+        esac
 
         content="${content//"$pattern"/$replacement}"
     done
@@ -416,19 +531,21 @@ substituteInPlace() {
 }
 
 
+# Substitute all environment variables that start with a lowercase character and
+# are valid Bash names.
 substituteAll() {
     local input="$1"
     local output="$2"
+    local -a args=()
 
-    # Select all environment variables that start with a lowercase character.
-    for envVar in $(env | sed -e $'s/^\([a-z][^=]*\)=.*/\\1/; t \n d'); do
-        if [ "$NIX_DEBUG" = "1" ]; then
-            echo "$envVar -> ${!envVar}"
+    for varName in $(awk 'BEGIN { for (v in ENVIRON) if (v ~ /^[a-z][a-zA-Z0-9_]*$/) print v }'); do
+        if [ "${NIX_DEBUG:-}" = "1" ]; then
+            printf "@%s@ -> %q\n" "${varName}" "${!varName}"
         fi
-        args="$args --subst-var $envVar"
+        args+=("--subst-var" "$varName")
     done
 
-    substitute "$input" "$output" $args
+    substitute "$input" "$output" "${args[@]}"
 }
 
 
@@ -449,18 +566,22 @@ substituteAllInPlace() {
 # then go to the build directory and source in `env-vars' to reproduce
 # the environment used for building.
 dumpVars() {
-    if [ "$noDumpEnvVars" != 1 ]; then
+    if [ "${noDumpEnvVars:-0}" != 1 ]; then
         export > "$NIX_BUILD_TOP/env-vars" || true
     fi
 }
 
 
-# Utility function: return the base name of the given path, with the
+# Utility function: echo the base name of the given path, with the
 # prefix `HASH-' removed, if present.
 stripHash() {
-    strippedName=$(basename $1);
+    local strippedName
+    # On separate line for `set -e`
+    strippedName="$(basename "$1")"
     if echo "$strippedName" | grep -q '^[a-z0-9]\{32\}-'; then
-        strippedName=$(echo "$strippedName" | cut -c34-)
+        echo "$strippedName" | cut -c34-
+    else
+        echo "$strippedName"
     fi
 }
 
@@ -471,10 +592,10 @@ _defaultUnpack() {
 
     if [ -d "$fn" ]; then
 
-        stripHash "$fn"
-        # We can't preserve hardlinks because they may have been introduced by
-        # store optimization, which might break things in the build
-        cp -pr --reflink=auto --no-preserve=timestamps "$fn" $strippedName
+        # We can't preserve hardlinks because they may have been
+        # introduced by store optimization, which might break things
+        # in the build.
+        cp -pr --reflink=auto "$fn" "$(stripHash "$fn")"
 
     else
 
@@ -504,15 +625,15 @@ unpackFile() {
         echo "do not know how to unpack source archive $curSrc"
         exit 1
     fi
-    stopNest
 }
 
 
 unpackPhase() {
     runHook preUnpack
 
-    if [ -z "$srcs" ]; then
-        if [ -z "$src" ]; then
+    if [ -z "${srcs:-}" ]; then
+        if [ -z "${src:-}" ]; then
+            # shellcheck disable=SC2016
             echo 'variable $src or $srcs should point to the source'
             exit 1
         fi
@@ -532,14 +653,17 @@ unpackPhase() {
 
     # Unpack all source archives.
     for i in $srcs; do
-        unpackFile $i
+        unpackFile "$i"
     done
 
     # Find the source directory.
-    if [ -n "$setSourceRoot" ]; then
+
+    # set to empty if unset
+    : ${sourceRoot=}
+
+    if [ -n "${setSourceRoot:-}" ]; then
         runOneHook setSourceRoot
     elif [ -z "$sourceRoot" ]; then
-        sourceRoot=
         for i in *; do
             if [ -d "$i" ]; then
                 case $dirsBefore in
@@ -567,7 +691,7 @@ unpackPhase() {
     # By default, add write permission to the sources.  This is often
     # necessary when sources have been copied from other store
     # locations.
-    if [ "$dontMakeSourcesWritable" != 1 ]; then
+    if [ "${dontMakeSourcesWritable:-0}" != 1 ]; then
         chmod -R u+w "$sourceRoot"
     fi
 
@@ -578,7 +702,7 @@ unpackPhase() {
 patchPhase() {
     runHook prePatch
 
-    for i in $patches; do
+    for i in ${patches:-}; do
         header "applying patch $i" 3
         local uncompress=cat
         case "$i" in
@@ -596,8 +720,8 @@ patchPhase() {
                 ;;
         esac
         # "2>&1" is a hack to make patch fail if the decompressor fails (nonexistent patch, etc.)
+        # shellcheck disable=SC2086
         $uncompress < "$i" 2>&1 | patch ${patchFlags:--p1}
-        stopNest
     done
 
     runHook postPatch
@@ -612,41 +736,53 @@ fixLibtool() {
 configurePhase() {
     runHook preConfigure
 
-    if [ -z "$configureScript" ]; then
+    # set to empty if unset
+    : ${configureScript=}
+    : ${configureFlags=}
+
+    if [[ -z "$configureScript" && -x ./configure ]]; then
         configureScript=./configure
-        if ! [ -x $configureScript ]; then
-            echo "no configure script, doing nothing"
-            return
-        fi
     fi
 
-    if [ -z "$dontFixLibtool" ]; then
-        find . -iname "ltmain.sh" | while read i; do
+    if [ -z "${dontFixLibtool:-}" ]; then
+        local i
+        find . -iname "ltmain.sh" -print0 | while IFS='' read -r -d '' i; do
             echo "fixing libtool script $i"
-            fixLibtool $i
+            fixLibtool "$i"
         done
     fi
 
-    if [ -z "$dontAddPrefix" ]; then
+    if [[ -z "${dontAddPrefix:-}" && -n "$prefix" ]]; then
         configureFlags="${prefixKey:---prefix=}$prefix $configureFlags"
     fi
 
     # Add --disable-dependency-tracking to speed up some builds.
-    if [ -z "$dontAddDisableDepTrack" ]; then
-        if grep -q dependency-tracking $configureScript; then
+    if [ -z "${dontAddDisableDepTrack:-}" ]; then
+        if [ -f "$configureScript" ] && grep -q dependency-tracking "$configureScript"; then
             configureFlags="--disable-dependency-tracking $configureFlags"
         fi
     fi
 
     # By default, disable static builds.
-    if [ -z "$dontDisableStatic" ]; then
-        if grep -q enable-static $configureScript; then
+    if [ -z "${dontDisableStatic:-}" ]; then
+        if [ -f "$configureScript" ] && grep -q enable-static "$configureScript"; then
             configureFlags="--disable-static $configureFlags"
         fi
     fi
 
-    echo "configure flags: $configureFlags ${configureFlagsArray[@]}"
-    $configureScript $configureFlags "${configureFlagsArray[@]}"
+    if [ -n "$configureScript" ]; then
+        # Old bash empty array hack
+        # shellcheck disable=SC2086
+        local flagsArray=(
+            $configureFlags ${configureFlagsArray+"${configureFlagsArray[@]}"}
+        )
+        echoCmd 'configure flags' "${flagsArray[@]}"
+        # shellcheck disable=SC2086
+        $configureScript "${flagsArray[@]}"
+        unset flagsArray
+    else
+        echo "no configure script, doing nothing"
+    fi
 
     runHook postConfigure
 }
@@ -655,19 +791,27 @@ configurePhase() {
 buildPhase() {
     runHook preBuild
 
-    if [ -z "$makeFlags" ] && ! [ -n "$makefile" -o -e "Makefile" -o -e "makefile" -o -e "GNUmakefile" ]; then
+    # set to empty if unset
+    : ${makeFlags=}
+
+    if [[ -z "$makeFlags" && ! ( -n "${makefile:-}" || -e Makefile || -e makefile || -e GNUmakefile ) ]]; then
         echo "no Makefile, doing nothing"
-        return
+    else
+        # See https://github.com/NixOS/nixpkgs/pull/1354#issuecomment-31260409
+        makeFlags="SHELL=$SHELL $makeFlags"
+
+        # Old bash empty array hack
+        # shellcheck disable=SC2086
+        local flagsArray=(
+            ${enableParallelBuilding:+-j${NIX_BUILD_CORES} -l${NIX_BUILD_CORES}}
+            $makeFlags ${makeFlagsArray+"${makeFlagsArray[@]}"}
+            $buildFlags ${buildFlagsArray+"${buildFlagsArray[@]}"}
+        )
+
+        echoCmd 'build flags' "${flagsArray[@]}"
+        make ${makefile:+-f $makefile} "${flagsArray[@]}"
+        unset flagsArray
     fi
-
-    # See https://github.com/NixOS/nixpkgs/pull/1354#issuecomment-31260409
-    makeFlags="SHELL=$SHELL $makeFlags"
-
-    echo "make flags: $makeFlags ${makeFlagsArray[@]} $buildFlags ${buildFlagsArray[@]}"
-    make ${makefile:+-f $makefile} \
-        ${enableParallelBuilding:+-j${NIX_BUILD_CORES} -l${NIX_BUILD_CORES}} \
-        $makeFlags "${makeFlagsArray[@]}" \
-        $buildFlags "${buildFlagsArray[@]}"
 
     runHook postBuild
 }
@@ -676,11 +820,18 @@ buildPhase() {
 checkPhase() {
     runHook preCheck
 
-    echo "check flags: $makeFlags ${makeFlagsArray[@]} $checkFlags ${checkFlagsArray[@]}"
-    make ${makefile:+-f $makefile} \
-        ${enableParallelBuilding:+-j${NIX_BUILD_CORES} -l${NIX_BUILD_CORES}} \
-        $makeFlags "${makeFlagsArray[@]}" \
-        ${checkFlags:-VERBOSE=y} "${checkFlagsArray[@]}" ${checkTarget:-check}
+    # Old bash empty array hack
+    # shellcheck disable=SC2086
+    local flagsArray=(
+        ${enableParallelBuilding:+-j${NIX_BUILD_CORES} -l${NIX_BUILD_CORES}}
+        $makeFlags ${makeFlagsArray+"${makeFlagsArray[@]}"}
+        ${checkFlags:-VERBOSE=y} ${checkFlagsArray+"${checkFlagsArray[@]}"}
+        ${checkTarget:-check}
+    )
+
+    echoCmd 'check flags' "${flagsArray[@]}"
+    make ${makefile:+-f $makefile} "${flagsArray[@]}"
+    unset flagsArray
 
     runHook postCheck
 }
@@ -689,13 +840,23 @@ checkPhase() {
 installPhase() {
     runHook preInstall
 
-    mkdir -p "$prefix"
+    if [ -n "$prefix" ]; then
+        mkdir -p "$prefix"
+    fi
 
-    installTargets=${installTargets:-install}
-    echo "install flags: $installTargets $makeFlags ${makeFlagsArray[@]} $installFlags ${installFlagsArray[@]}"
-    make ${makefile:+-f $makefile} $installTargets \
-        $makeFlags "${makeFlagsArray[@]}" \
-        $installFlags "${installFlagsArray[@]}"
+    installTargets="${installTargets:-install}"
+
+    # Old bash empty array hack
+    # shellcheck disable=SC2086
+    local flagsArray=(
+        $installTargets
+        $makeFlags ${makeFlagsArray+"${makeFlagsArray[@]}"}
+        $installFlags ${installFlagsArray+"${installFlagsArray[@]}"}
+    )
+
+    echoCmd 'install flags' "${flagsArray[@]}"
+    make ${makefile:+-f $makefile} "${flagsArray[@]}"
+    unset flagsArray
 
     runHook postInstall
 }
@@ -715,27 +876,48 @@ fixupPhase() {
     # Apply fixup to each output.
     local output
     for output in $outputs; do
-        prefix=${!output} runHook fixupOutput
+        prefix="${!output}" runHook fixupOutput
     done
 
-    if [ -n "$propagatedBuildInputs" ]; then
-        mkdir -p "$out/nix-support"
-        echo "$propagatedBuildInputs" > "$out/nix-support/propagated-build-inputs"
+
+    # Propagate build inputs and setup hook into the development output.
+
+    if [ -z "${crossConfig:-}" ]; then
+        # Not cross-compiling - propagatedBuildInputs are handled identically to propagatedNativeBuildInputs
+        local propagated="$propagatedNativeBuildInputs"
+        if [ -n "${propagatedBuildInputs:-}" ]; then
+            propagated+="${propagated:+ }$propagatedBuildInputs"
+        fi
+        if [ -n "${propagated:-}" ]; then
+            mkdir -p "${!outputDev}/nix-support"
+            # shellcheck disable=SC2086
+            printWords $propagated > "${!outputDev}/nix-support/propagated-native-build-inputs"
+        fi
+    else
+        if [ -n "${propagatedBuildInputs:-}" ]; then
+            mkdir -p "${!outputDev}/nix-support"
+            # shellcheck disable=SC2086
+            printWords $propagatedBuildInputs > "${!outputDev}/nix-support/propagated-build-inputs"
+        fi
+
+        if [ -n "${propagatedNativeBuildInputs:-}" ]; then
+            mkdir -p "${!outputDev}/nix-support"
+            # shellcheck disable=SC2086
+            printWords $propagatedNativeBuildInputs > "${!outputDev}/nix-support/propagated-native-build-inputs"
+        fi
     fi
 
-    if [ -n "$propagatedNativeBuildInputs" ]; then
-        mkdir -p "$out/nix-support"
-        echo "$propagatedNativeBuildInputs" > "$out/nix-support/propagated-native-build-inputs"
+    if [ -n "${setupHook:-}" ]; then
+        mkdir -p "${!outputDev}/nix-support"
+        substituteAll "$setupHook" "${!outputDev}/nix-support/setup-hook"
     fi
 
-    if [ -n "$propagatedUserEnvPkgs" ]; then
-        mkdir -p "$out/nix-support"
-        echo "$propagatedUserEnvPkgs" > "$out/nix-support/propagated-user-env-packages"
-    fi
+    # Propagate user-env packages into the output with binaries, TODO?
 
-    if [ -n "$setupHook" ]; then
-        mkdir -p "$out/nix-support"
-        substituteAll "$setupHook" "$out/nix-support/setup-hook"
+    if [ -n "${propagatedUserEnvPkgs:-}" ]; then
+        mkdir -p "${!outputBin}/nix-support"
+        # shellcheck disable=SC2086
+        printWords $propagatedUserEnvPkgs > "${!outputBin}/nix-support/propagated-user-env-packages"
     fi
 
     runHook postFixup
@@ -745,11 +927,18 @@ fixupPhase() {
 installCheckPhase() {
     runHook preInstallCheck
 
-    echo "installcheck flags: $makeFlags ${makeFlagsArray[@]} $installCheckFlags ${installCheckFlagsArray[@]}"
-    make ${makefile:+-f $makefile} \
-        ${enableParallelBuilding:+-j${NIX_BUILD_CORES} -l${NIX_BUILD_CORES}} \
-        $makeFlags "${makeFlagsArray[@]}" \
-        $installCheckFlags "${installCheckFlagsArray[@]}" ${installCheckTarget:-installcheck}
+    # Old bash empty array hack
+    # shellcheck disable=SC2086
+    local flagsArray=(
+        ${enableParallelBuilding:+-j${NIX_BUILD_CORES} -l${NIX_BUILD_CORES}}
+        $makeFlags ${makeFlagsArray+"${makeFlagsArray[@]}"}
+        $installCheckFlags ${installCheckFlagsArray+"${installCheckFlagsArray[@]}"}
+        ${installCheckTarget:-installcheck}
+    )
+
+    echoCmd 'installcheck flags' "${flagsArray[@]}"
+    make ${makefile:+-f $makefile} "${flagsArray[@]}"
+    unset flagsArray
 
     runHook postInstallCheck
 }
@@ -758,15 +947,22 @@ installCheckPhase() {
 distPhase() {
     runHook preDist
 
-    echo "dist flags: $distFlags ${distFlagsArray[@]}"
-    make ${makefile:+-f $makefile} $distFlags "${distFlagsArray[@]}" ${distTarget:-dist}
+    # Old bash empty array hack
+    # shellcheck disable=SC2086
+    local flagsArray=(
+        $distFlags ${distFlagsArray+"${distFlagsArray[@]}"} ${distTarget:-dist}
+    )
 
-    if [ "$dontCopyDist" != 1 ]; then
+    echo 'dist flags: %q' "${flagsArray[@]}"
+    make ${makefile:+-f $makefile} "${flagsArray[@]}"
+
+    if [ "${dontCopyDist:-0}" != 1 ]; then
         mkdir -p "$out/tarballs"
 
         # Note: don't quote $tarballs, since we explicitly permit
         # wildcards in there.
-        cp -pvd ${tarballs:-*.tar.gz} $out/tarballs
+        # shellcheck disable=SC2086
+        cp -pvd ${tarballs:-*.tar.gz} "$out/tarballs"
     fi
 
     runHook postDist
@@ -775,7 +971,7 @@ distPhase() {
 
 showPhaseHeader() {
     local phase="$1"
-    case $phase in
+    case "$phase" in
         unpackPhase) header "unpacking sources";;
         patchPhase) header "patching sources";;
         configurePhase) header "configuring";;
@@ -790,29 +986,38 @@ showPhaseHeader() {
 
 
 genericBuild() {
-    if [ -n "$buildCommand" ]; then
+    if [ -f "${buildCommandPath:-}" ]; then
+        local oldOpts="$(shopt -po nounset)"
+        set +u
+        source "$buildCommandPath"
+        eval "$oldOpts"
+        return
+    fi
+    if [ -n "${buildCommand:-}" ]; then
+        local oldOpts="$(shopt -po nounset)"
+        set +u
         eval "$buildCommand"
+        eval "$oldOpts"
         return
     fi
 
-    if [ -z "$phases" ]; then
-        phases="$prePhases unpackPhase patchPhase $preConfigurePhases \
-            configurePhase $preBuildPhases buildPhase checkPhase \
-            $preInstallPhases installPhase $preFixupPhases fixupPhase installCheckPhase \
-            $preDistPhases distPhase $postPhases";
+    if [ -z "${phases:-}" ]; then
+        phases="${prePhases:-} unpackPhase patchPhase ${preConfigurePhases:-} \
+            configurePhase ${preBuildPhases:-} buildPhase checkPhase \
+            ${preInstallPhases:-} installPhase ${preFixupPhases:-} fixupPhase installCheckPhase \
+            ${preDistPhases:-} distPhase ${postPhases:-}";
     fi
 
     for curPhase in $phases; do
-        if [ "$curPhase" = buildPhase -a -n "$dontBuild" ]; then continue; fi
-        if [ "$curPhase" = checkPhase -a -z "$doCheck" ]; then continue; fi
-        if [ "$curPhase" = installPhase -a -n "$dontInstall" ]; then continue; fi
-        if [ "$curPhase" = fixupPhase -a -n "$dontFixup" ]; then continue; fi
-        if [ "$curPhase" = installCheckPhase -a -z "$doInstallCheck" ]; then continue; fi
-        if [ "$curPhase" = distPhase -a -z "$doDist" ]; then continue; fi
+        if [[ "$curPhase" = buildPhase && -n "${dontBuild:-}" ]]; then continue; fi
+        if [[ "$curPhase" = checkPhase && -z "${doCheck:-}" ]]; then continue; fi
+        if [[ "$curPhase" = installPhase && -n "${dontInstall:-}" ]]; then continue; fi
+        if [[ "$curPhase" = fixupPhase && -n "${dontFixup:-}" ]]; then continue; fi
+        if [[ "$curPhase" = installCheckPhase && -z "${doInstallCheck:-}" ]]; then continue; fi
+        if [[ "$curPhase" = distPhase && -z "${doDist:-}" ]]; then continue; fi
 
-        if [ -n "$tracePhases" ]; then
-            echo
-            echo "@ phase-started $out $curPhase"
+        if [[ -n $NIX_LOG_FD ]]; then
+            echo "@nix { \"action\": \"setPhase\", \"phase\": \"$curPhase\" }" >&$NIX_LOG_FD
         fi
 
         showPhaseHeader "$curPhase"
@@ -820,18 +1025,14 @@ genericBuild() {
 
         # Evaluate the variable named $curPhase if it exists, otherwise the
         # function named $curPhase.
+        local oldOpts="$(shopt -po nounset)"
+        set +u
         eval "${!curPhase:-$curPhase}"
+        eval "$oldOpts"
 
         if [ "$curPhase" = unpackPhase ]; then
             cd "${sourceRoot:-.}"
         fi
-
-        if [ -n "$tracePhases" ]; then
-            echo
-            echo "@ phase-succeeded $out $curPhase"
-        fi
-
-        stopNest
     done
 }
 
@@ -847,3 +1048,6 @@ runHook userHook
 
 
 dumpVars
+
+# Disable nounset for nix-shell.
+set +u

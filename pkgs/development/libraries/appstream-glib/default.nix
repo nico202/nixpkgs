@@ -1,28 +1,44 @@
-{ stdenv, fetchurl, pkgconfig, gettext, gtk3, intltool, glib
-, gtk_doc, autoconf, automake, libtool, libarchive, libyaml
+{ stdenv, fetchFromGitHub, pkgconfig, gettext, gtk3, intltool, glib
+, gtk_doc, autoconf, automake, libtool, libarchive
 , gobjectIntrospection, sqlite, libsoup, gcab, attr, acl, docbook_xsl
+, libuuid, json_glib, autoconf-archive, meson, gperf, ninja, gdk_pixbuf
 }:
+let rpath = stdenv.lib.makeLibraryPath
+      [ libuuid.out
+        glib
+        libsoup
+        gdk_pixbuf
+        libarchive.lib
+        gcab
+      ];
+in stdenv.mkDerivation rec {
+  name = "appstream-glib-0.7.2";
 
-stdenv.mkDerivation rec {
-  name = "appstream-glib-0.3.6";
-
-  src = fetchurl {
-    url = "https://github.com/hughsie/appstream-glib/archive/appstream_glib_0_3_6.tar.gz";
-    sha256 = "1zdxg9dk9vxw2cs04cswd138di3dysz0hxk4918750hh19s3859c";
+  src = fetchFromGitHub {
+    owner = "hughsie";
+    repo = "appstream-glib";
+    rev = stdenv.lib.replaceStrings ["." "-"] ["_" "_"] name;
+    sha256 = "1jvwfida12d2snc8p9lpbpqzrixw2naaiwfmsrldwkrxsj3i19pl";
   };
 
-  buildInputs = [ glib libtool pkgconfig gtk_doc gettext intltool sqlite libsoup
-                  gcab attr acl docbook_xsl
-                  libarchive libyaml gtk3 autoconf automake gobjectIntrospection ];
+  nativeBuildInputs = [ meson pkgconfig ninja ];
+  buildInputs = [ glib gtk_doc gettext sqlite libsoup
+                  gcab attr acl docbook_xsl libuuid json_glib
+                  libarchive gobjectIntrospection gperf ];
+  propagatedBuildInputs = [ gtk3 ];
+  mesonFlags = [ "-Denable-rpm=false" "-Denable-stemmer=false" "-Denable-dep11=false" ];
 
-  configureScript = "./autogen.sh";
+  postFixup = ''
+    for elf in "$out"/bin/* "$out"/lib/*.so; do
+      patchelf --set-rpath '${rpath}':"$out/lib" "$elf"
+    done
+  '';
 
   meta = with stdenv.lib; {
     description = "Objects and helper methods to read and write AppStream metadata";
     homepage    = https://github.com/hughsie/appstream-glib;
     license     = licenses.lgpl21Plus;
     platforms   = platforms.linux;
-    maintainers = with maintainers; [ lethalman ];
+    maintainers = with maintainers; [ lethalman matthewbauer ];
   };
-
 }

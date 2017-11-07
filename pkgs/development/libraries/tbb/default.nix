@@ -13,7 +13,7 @@ stdenv.mkDerivation {
 
   installPhase = ''
     mkdir -p $out/{lib,share/doc}
-    cp "build/"*release*"/"*so* $out/lib/
+    cp "build/"*release*"/"*${stdenv.hostPlatform.extensions.sharedLibrary}* $out/lib/
     mv include $out/
     rm $out/include/index.html
     mv doc/html $out/share/doc/tbb
@@ -23,7 +23,7 @@ stdenv.mkDerivation {
 
   meta = {
     description = "Intel Thread Building Blocks C++ Library";
-    homepage = "http://threadingbuildingblocks.org/";
+    homepage = http://threadingbuildingblocks.org/;
     license = stdenv.lib.licenses.lgpl3Plus;
     longDescription = ''
       Intel Threading Building Blocks offers a rich and complete approach to
@@ -33,7 +33,7 @@ stdenv.mkDerivation {
       represents a higher-level, task-based parallelism that abstracts platform
       details and threading mechanisms for scalability and performance.
     '';
-    platforms = stdenv.lib.platforms.linux;
-    maintainers = with stdenv.lib.maintainers; [ simons thoughtpolice ];
+    platforms = with stdenv.lib.platforms; linux ++ darwin;
+    maintainers = with stdenv.lib.maintainers; [ peti thoughtpolice ];
   };
 }

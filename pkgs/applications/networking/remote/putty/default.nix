@@ -1,12 +1,12 @@
-{ stdenv, fetchurl, ncurses, gtk, pkgconfig, autoconf, automake, perl, halibut, libtool }:
+{ stdenv, fetchurl, ncurses, gtk2, pkgconfig, autoconf, automake, perl, halibut, libtool }:
 
 stdenv.mkDerivation rec {
-  version = "0.66";
+  version = "0.67";
   name = "putty-${version}";
 
   src = fetchurl {
     url = "http://the.earth.li/~sgtatham/putty/latest/${name}.tar.gz";
-    sha256 = "14r9yfqjs61l82q09m8zifgcxrzvs6dvgx32ndl5i1jldkv14wzy";
+    sha256 = "0isak6dy5vmfzf9ckcq6jvhgrn3xfmfcmziaa7g2jqm4x1c286c0";
   };
 
   preConfigure = ''
@@ -19,7 +19,7 @@ stdenv.mkDerivation rec {
     cd unix
   '';
 
-  buildInputs = [ gtk ncurses pkgconfig autoconf automake perl halibut libtool ];
+  buildInputs = [ gtk2 ncurses pkgconfig autoconf automake perl halibut libtool ];
 
   meta = with stdenv.lib; {
     description = "A Free Telnet/SSH Client";
@@ -28,7 +28,8 @@ stdenv.mkDerivation rec {
       platforms, along with an xterm terminal emulator.
       It is written and maintained primarily by Simon Tatham.
     '';
-    homepage = http://www.chiark.greenend.org.uk/~sgtatham/putty/;
+    homepage = https://www.chiark.greenend.org.uk/~sgtatham/putty/;
     license = licenses.mit;
+    platforms = platforms.linux;
   };
 }

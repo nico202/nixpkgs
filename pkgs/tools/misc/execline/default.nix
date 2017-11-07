@@ -2,7 +2,7 @@
 
 let
 
-  version = "2.1.4.0";
+  version = "2.2.0.0";
 
 in stdenv.mkDerivation rec {
 
@@ -11,7 +11,7 @@ in stdenv.mkDerivation rec {
   src = fetchgit {
     url = "git://git.skarnet.org/execline";
     rev = "refs/tags/v${version}";
-    sha256 = "1ih0mmkra3aa697nz7haaifq2hfy3wjj39npxzg9zr37m7yw67yz";
+    sha256 = "1795n6s0sp9hw8amx2hs9r395gv4c5sn63g077g1gal1vcpkcssn";
   };
 
   dontDisableStatic = true;
@@ -19,13 +19,16 @@ in stdenv.mkDerivation rec {
   enableParallelBuilding = true;
 
   configureFlags = [
+    "--enable-absolute-paths"
     "--libdir=\${prefix}/lib"
     "--includedir=\${prefix}/include"
     "--with-sysdeps=${skalibs}/lib/skalibs/sysdeps"
     "--with-include=${skalibs}/include"
     "--with-lib=${skalibs}/lib"
     "--with-dynlib=${skalibs}/lib"
-  ] ++ (if stdenv.isDarwin then [ "--disable-shared" ] else [ "--enable-shared" ]);
+  ]
+  ++ (if stdenv.isDarwin then [ "--disable-shared" ] else [ "--enable-shared" ])
+  ++ (stdenv.lib.optional stdenv.isDarwin "--build=${stdenv.system}");
 
   meta = {
     homepage = http://skarnet.org/software/execline/;

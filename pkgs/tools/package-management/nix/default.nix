@@ -1,20 +1,51 @@
-{ lib, stdenv, fetchurl, perl, curl, bzip2, sqlite, openssl ? null, xz
-, pkgconfig, boehmgc, perlPackages, libsodium
+{ lib, stdenv, fetchurl, fetchFromGitHub, perl, curl, bzip2, sqlite, openssl ? null, xz
+, pkgconfig, boehmgc, perlPackages, libsodium, aws-sdk-cpp, brotli, readline
+, autoreconfHook, autoconf-archive, bison, flex, libxml2, libxslt, docbook5, docbook5_xsl
+, libseccomp, busybox, nlohmann_json
+, hostPlatform
 , storeDir ? "/nix/store"
 , stateDir ? "/nix/var"
+, confDir ? "/etc"
 }:
 
 let
 
-  common = { name, src }: stdenv.mkDerivation rec {
+  sh = busybox.override {
+    useMusl = true;
+    enableStatic = true;
+    enableMinimal = true;
+    extraConfig = ''
+      CONFIG_ASH y
+      CONFIG_ASH_BUILTIN_ECHO y
+      CONFIG_ASH_BUILTIN_TEST y
+      CONFIG_ASH_OPTIMIZE_FOR_SIZE y
+    '';
+  };
+
+  common = { name, suffix ? "", src, fromGit ? false }: stdenv.mkDerivation rec {
     inherit name src;
+    version = lib.getVersion name;
 
-    outputs = [ "out" "doc" ];
+    is112 = lib.versionAtLeast version "1.12pre";
 
-    nativeBuildInputs = [ perl pkgconfig ];
+    VERSION_SUFFIX = lib.optionalString fromGit suffix;
+
+    outputs = [ "out" "dev" "man" "doc" ];
+
+    nativeBuildInputs =
+      [ pkgconfig ]
+      ++ lib.optionals (!is112) [ perl ]
+      ++ lib.optionals fromGit [ autoreconfHook autoconf-archive bison flex libxml2 libxslt docbook5 docbook5_xsl ];
 
     buildInputs = [ curl openssl sqlite xz ]
-      ++ lib.optional (stdenv.isLinux || stdenv.isDarwin) libsodium;
+      ++ lib.optional (stdenv.isLinux || stdenv.isDarwin) libsodium
+      ++ lib.optionals fromGit [ brotli readline nlohmann_json ] # Since 1.12
+      ++ lib.optional stdenv.isLinux libseccomp
+      ++ lib.optional ((stdenv.isLinux || stdenv.isDarwin) && is112)
+          (aws-sdk-cpp.override {
+            apis = ["s3"];
+            customMemoryManagement = false;
+          });
 
     propagatedBuildInputs = [ boehmgc ];
 
@@ -22,26 +53,34 @@ let
     # would end up using the wrong bzip2 when cross-compiling.
     # XXX: The right thing would be to reinstate `--with-bzip2' in Nix.
     postUnpack =
-      '' export CPATH="${bzip2}/include"
-         export LIBRARY_PATH="${bzip2}/lib"
+      '' export CPATH="${bzip2.dev}/include"
+         export LIBRARY_PATH="${bzip2.out}/lib"
          export CXXFLAGS="-Wno-error=reserved-user-defined-literal"
       '';
 
     configureFlags =
-      ''
-        --with-store-dir=${storeDir} --localstatedir=${stateDir} --sysconfdir=/etc
-        --with-dbi=${perlPackages.DBI}/${perl.libPrefix}
-        --with-dbd-sqlite=${perlPackages.DBDSQLite}/${perl.libPrefix}
-        --with-www-curl=${perlPackages.WWWCurl}/${perl.libPrefix}
-        --disable-init-state
-        --enable-gc
-      '';
+      [ "--with-store-dir=${storeDir}"
+        "--localstatedir=${stateDir}"
+        "--sysconfdir=${confDir}"
+        "--disable-init-state"
+        "--enable-gc"
+      ]
+      ++ lib.optionals (!is112) [
+        "--with-dbi=${perlPackages.DBI}/${perl.libPrefix}"
+        "--with-dbd-sqlite=${perlPackages.DBDSQLite}/${perl.libPrefix}"
+        "--with-www-curl=${perlPackages.WWWCurl}/${perl.libPrefix}"
+      ] ++ lib.optionals (is112 && stdenv.isLinux) [
+        "--with-sandbox-shell=${sh}/bin/busybox"
+      ];
 
     makeFlags = "profiledir=$(out)/etc/profile.d";
 
     installFlags = "sysconfdir=$(out)/etc";
 
-    doInstallCheck = false;
+    doInstallCheck = true;
+
+    # socket path becomes too long otherwise
+    preInstallCheck = lib.optional stdenv.isDarwin "export TMPDIR=/tmp";
 
     separateDebugInfo = stdenv.isLinux;
 
@@ -60,8 +99,8 @@ let
           --disable-init-state
           --enable-gc
         '' + stdenv.lib.optionalString (
-            stdenv.cross ? nix && stdenv.cross.nix ? system
-        ) ''--with-system=${stdenv.cross.nix.system}'';
+            hostPlatform ? nix && hostPlatform.nix ? system
+        ) ''--with-system=${hostPlatform.nix.system}'';
 
       doInstallCheck = false;
     };
@@ -77,31 +116,59 @@ let
         a package, multi-user package management and easy setup of build
         environments.
       '';
-      homepage = http://nixos.org/;
+      homepage = https://nixos.org/;
       license = stdenv.lib.licenses.lgpl2Plus;
       maintainers = [ stdenv.lib.maintainers.eelco ];
       platforms = stdenv.lib.platforms.all;
+      outputsToInstall = [ "out" "man" ];
     };
+
+    passthru = { inherit fromGit; };
+  };
+
+  perl-bindings = { nix }: stdenv.mkDerivation {
+    name = "nix-perl-" + nix.version;
+
+    inherit (nix) src;
+
+    postUnpack = "sourceRoot=$sourceRoot/perl";
+
+    nativeBuildInputs =
+      [ perl pkgconfig curl nix libsodium ]
+      ++ lib.optionals nix.fromGit [ autoreconfHook autoconf-archive ];
+
+    configureFlags =
+      [ "--with-dbi=${perlPackages.DBI}/${perl.libPrefix}"
+        "--with-dbd-sqlite=${perlPackages.DBDSQLite}/${perl.libPrefix}"
+      ];
+
+    preConfigure = "export NIX_STATE_DIR=$TMPDIR";
+
+    preBuild = "unset NIX_INDENT_MAKE";
   };
 
 in rec {
 
-   nix = nixStable;
+  nix = nixStable;
 
-   nixStable = common rec {
-     name = "nix-1.10";
-     src = fetchurl {
-       url = "http://nixos.org/releases/nix/${name}/${name}.tar.xz";
-       sha256 = "5612ca7a549dd1ee20b208123e041aaa95a414a0e8f650ea88c672dc023d10f6";
-     };
-   };
+  nixStable = (common rec {
+    name = "nix-1.11.15";
+    src = fetchurl {
+      url = "http://nixos.org/releases/nix/${name}/${name}.tar.xz";
+      sha256 = "d20f20e45d519f54fae5c61d55eadcf53e6d7cdbde9870eeec80d499f9805165";
+    };
+  }) // { perl-bindings = nixStable; };
 
-   nixUnstable = lib.lowPrio (common rec {
-     name = "nix-1.11pre4345_b8258a4";
-     src = fetchurl {
-       url = "http://hydra.nixos.org/build/29615957/download/4/${name}.tar.xz";
-       sha256 = "06944da78e46d8f2cbeeb02c1ab3127a06935e984bcf7a972041c7d91814f0f2";
-     };
-   });
+  nixUnstable = (lib.lowPrio (common rec {
+    name = "nix-1.12${suffix}";
+    suffix = "pre5619_346aeee1";
+    src = fetchFromGitHub {
+      owner = "NixOS";
+      repo = "nix";
+      rev = "346aeee1cb21b5cab5ddc3e8658c88321f513761";
+      sha256 = "0lyrs0mqnh89w1nzrqpxvnh7bdjpg8j22xaidql47f1nwbblmn3f";
+    };
+    fromGit = true;
+  })) // { perl-bindings = perl-bindings { nix = nixUnstable; }; };
 
 }

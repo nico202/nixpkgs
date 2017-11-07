@@ -3,12 +3,14 @@
 
 stdenv.mkDerivation rec {
   name = "gtk-doc-${version}";
-  version = "1.24";
+  version = "1.25";
 
   src = fetchurl {
     url = "mirror://gnome/sources/gtk-doc/${version}/${name}.tar.xz";
-    sha256 = "12xmmcnq4138dlbhmqa45wqza8dky4lf856sp80h6xjwl2g7a85l";
+    sha256 = "0hpxcij9xx9ny3gs9p0iz4r8zslw8wqymbyababiyl7603a6x90y";
   };
+
+  outputDevdoc = "out";
 
   # maybe there is a better way to pass the needed dtd and xsl files
   # "-//OASIS//DTD DocBook XML V4.1.2//EN" and "http://docbook.sourceforge.net/release/xsl/current/html/chunk.xsl"
@@ -32,7 +34,7 @@ stdenv.mkDerivation rec {
    ];
 
   meta = with stdenv.lib; {
-    homepage = http://www.gtk.org/gtk-doc;
+    homepage = https://www.gtk.org/gtk-doc;
     description = "Tools to extract documentation embedded in GTK+ and GNOME source code";
     license = licenses.gpl2;
     maintainers = with maintainers; [ pSub ];

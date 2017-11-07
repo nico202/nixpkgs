@@ -1,9 +1,10 @@
 { callPackage, fetchurl }:
 
 callPackage ./generic.nix (rec {
-  version = "2015-12-18";
+  version = "2017-05-22";
   src = fetchurl {
-    url = "http://hydra.nixos.org/build/29118371/download/2/nixops-1.3.1pre1673_a0d5681.tar.bz2";
-    sha256 = "177lnlfz32crcc0gjmh1gn5y2xs142kmb4b68k4raxcxxw118kw9";
+    # Sadly hydra doesn't offer download links
+    url = "https://static.domenkozar.com/nixops-1.5.1pre2169_8f4a67c.tar.bz2";
+    sha256 = "0rma5npgkhlknmvm8z0ps54dsr07za1f32p6d6na3nis784h0slw";
   };
 })

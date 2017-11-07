@@ -5,7 +5,7 @@ let
     /* TODO: there are also MacOS, FreeBSD and Windows versions */
     x86_64-linux = {
       arch = "linuxx86";
-      sha256 = "04p77n18cw0bc8i66mp2vfrhlliahrx66lm004a3nw3h0mdk0gd8";
+      sha256 = "0g6mkl207ri3ib9w85i9w0sv7srz784pbxidz0d95p6qkvg6shba";
       runtime = "lx86cl64";
       kernel = "linuxx8664";
     };
@@ -17,7 +17,7 @@ let
     };
     armv7l-linux = {
       arch = "linuxarm";
-      sha256 = "0xg9p1q1fpgyfhwjk2hh24vqzddzx5zqff04lycf0vml5qw1gnkv";
+      sha256 = "0k6wxwyg3pmbb5xdkwma0i3rvbjmy3p604g4minjjc1drzsn1i0q";
       runtime = "armcl";
       kernel = "linuxarm";
     };
@@ -30,7 +30,7 @@ assert builtins.hasAttr stdenv.system options;
 
 stdenv.mkDerivation rec {
   name     = "ccl-${version}";
-  version  = "1.10";
+  version  = "1.11";
   revision = "16313";
 
   src = fetchsvn {
@@ -68,11 +68,12 @@ stdenv.mkDerivation rec {
     mkdir -p "$out/bin"
     echo -e '#!/bin/sh\n'"$out/share/ccl-installation/${CCL_RUNTIME}"' "$@"\n' > "$out"/bin/"${CCL_RUNTIME}"
     chmod a+x "$out"/bin/"${CCL_RUNTIME}"
+    ln -s "$out"/bin/"${CCL_RUNTIME}" "$out"/bin/ccl
   '';
 
   meta = with stdenv.lib; {
     description = "Clozure Common Lisp";
-    homepage    = http://ccl.clozure.com/;
+    homepage    = https://ccl.clozure.com/;
     maintainers = with maintainers; [ raskin muflax tohl ];
     platforms   = attrNames options;
     license     = licenses.lgpl21;

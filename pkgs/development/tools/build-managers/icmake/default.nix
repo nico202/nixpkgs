@@ -1,11 +1,11 @@
-{ stdenv, fetchFromGitHub }:
+{ stdenv, fetchFromGitHub, gcc }:
 
-let version = "7.23.02"; in
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   name = "icmake-${version}";
+  version = "9.02.02";
 
   src = fetchFromGitHub {
-    sha256 = "0gp2f8bw9i7vccsbz878mri0k6fls2x8hklbbr6mayag397gr928";
+    sha256 = "0f7w3b8r2h6ckgzc6wbfbw5yyxia0f3j3acmzi1yzylj6ak05mmd";
     rev = version;
     repo = "icmake";
     owner = "fbb-git";
@@ -13,13 +13,16 @@ stdenv.mkDerivation {
 
   sourceRoot = "icmake-${version}-src/icmake";
 
+  buildInputs = [ gcc ];
+
   preConfigure = ''
     patchShebangs ./
     substituteInPlace INSTALL.im --replace "usr/" ""
   '';
 
   buildPhase = ''
-    ./icm_bootstrap $out
+    ./icm_prepare $out
+    ./icm_bootstrap x
   '';
 
   installPhase = ''
@@ -27,7 +30,6 @@ stdenv.mkDerivation {
   '';
 
   meta = with stdenv.lib; {
-    inherit version;
     description = "A program maintenance (make) utility using a C-like grammar";
     homepage = https://fbb-git.github.io/icmake/;
     license = licenses.gpl3;

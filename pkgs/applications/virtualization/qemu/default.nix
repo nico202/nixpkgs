@@ -1,56 +1,90 @@
-{ stdenv, fetchurl, python, zlib, pkgconfig, glib, ncurses, perl, pixman
-, attr, libcap, vde2, alsaLib, texinfo, libuuid, flex, bison, lzo, snappy
-, libseccomp, libaio, libcap_ng, gnutls, nettle, numactl
+{ stdenv, fetchurl, fetchpatch, python2, zlib, pkgconfig, glib
+, ncurses, perl, pixman, vde2, alsaLib, texinfo, flex
+, bison, lzo, snappy, libaio, gnutls, nettle, curl
 , makeWrapper
-, pulseSupport ? true, libpulseaudio
-, sdlSupport ? true, SDL
+, attr, libcap, libcap_ng
+, CoreServices, Cocoa, rez, setfile
+, numaSupport ? stdenv.isLinux, numactl
+, seccompSupport ? stdenv.isLinux, libseccomp
+, pulseSupport ? !stdenv.isDarwin, libpulseaudio
+, sdlSupport ? !stdenv.isDarwin, SDL
 , vncSupport ? true, libjpeg, libpng
-, spiceSupport ? true, spice, spice_protocol, usbredir
+, spiceSupport ? !stdenv.isDarwin, spice, spice_protocol
+, usbredirSupport ? spiceSupport, usbredir
+, xenSupport ? false, xen
 , x86Only ? false
+, nixosTestRunner ? false
 }:
 
 with stdenv.lib;
 let
-  version = "2.4.1";
+  version = "2.9.1";
   audio = optionalString (hasSuffix "linux" stdenv.system) "alsa,"
     + optionalString pulseSupport "pa,"
     + optionalString sdlSupport "sdl,";
 in
 
 stdenv.mkDerivation rec {
-  name = "qemu-" + stdenv.lib.optionalString x86Only "x86-only-" + version;
+  name = "qemu-"
+    + stdenv.lib.optionalString xenSupport "xen-"
+    + stdenv.lib.optionalString x86Only "x86-only-"
+    + stdenv.lib.optionalString nixosTestRunner "for-vm-tests-"
+    + version;
 
   src = fetchurl {
     url = "http://wiki.qemu.org/download/qemu-${version}.tar.bz2";
-    sha256 = "0xx1wc7lj5m3r2ab7f0axlfknszvbd8rlclpqz4jk48zid6czmg3";
+    sha256 = "1340hh4jvhvi97yqck408wi8aagnhzq1311ih0fq9bp4ddlk03sd";
   };
 
   buildInputs =
-    [ python zlib pkgconfig glib ncurses perl pixman attr libcap
-      vde2 texinfo libuuid flex bison makeWrapper lzo snappy libseccomp
-      libcap_ng gnutls nettle numactl
+    [ python2 zlib pkgconfig glib ncurses perl pixman
+      vde2 texinfo flex bison makeWrapper lzo snappy
+      gnutls nettle curl
     ]
+    ++ optionals stdenv.isDarwin [ CoreServices Cocoa rez setfile ]
+    ++ optionals seccompSupport [ libseccomp ]
+    ++ optionals numaSupport [ numactl ]
     ++ optionals pulseSupport [ libpulseaudio ]
     ++ optionals sdlSupport [ SDL ]
     ++ optionals vncSupport [ libjpeg libpng ]
-    ++ optionals spiceSupport [ spice_protocol spice usbredir ]
-    ++ optionals (hasSuffix "linux" stdenv.system) [ alsaLib libaio ];
+    ++ optionals spiceSupport [ spice_protocol spice ]
+    ++ optionals usbredirSupport [ usbredir ]
+    ++ optionals stdenv.isLinux [ alsaLib libaio libcap_ng libcap attr ]
+    ++ optionals xenSupport [ xen ];
 
   enableParallelBuilding = true;
 
-  patches = [ ./no-etc-install.patch ];
+  patches = [ ./no-etc-install.patch ]
+    ++ optional nixosTestRunner ./force-uid0-on-9p.patch
+    ++ optional pulseSupport ./fix-hda-recording.patch;
+
+  hardeningDisable = [ "stackprotector" ];
+
+  preConfigure = ''
+    unset CPP # intereferes with dependency calculation
+  '';
 
   configureFlags =
-    [ "--enable-seccomp"
-      "--enable-numa"
-      "--smbd=smbd" # use `smbd' from $PATH
+    [ "--smbd=smbd" # use `smbd' from $PATH
       "--audio-drv-list=${audio}"
       "--sysconfdir=/etc"
       "--localstatedir=/var"
     ]
+    ++ optional numaSupport "--enable-numa"
+    ++ optional seccompSupport "--enable-seccomp"
     ++ optional spiceSupport "--enable-spice"
+    ++ optional usbredirSupport "--enable-usb-redir"
     ++ optional x86Only "--target-list=i386-softmmu,x86_64-softmmu"
-    ++ optional (hasSuffix "linux" stdenv.system) "--enable-linux-aio";
+    ++ optional stdenv.isDarwin "--enable-cocoa"
+    ++ optional stdenv.isLinux "--enable-linux-aio"
+    ++ optional xenSupport "--enable-xen";
+
+  postFixup =
+    ''
+      for exe in $out/bin/qemu-system-* ; do
+        paxmark m $exe
+      done
+    '';
 
   postInstall =
     ''
@@ -66,6 +100,6 @@ stdenv.mkDerivation rec {
     description = "A generic and open source machine emulator and virtualizer";
     license = licenses.gpl2Plus;
     maintainers = with maintainers; [ viric eelco ];
-    platforms = platforms.linux;
+    platforms = platforms.linux ++ platforms.darwin;
   };
 }

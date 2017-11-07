@@ -1,4 +1,4 @@
-{ titaniumenv, fetchgit, target, androidPlatformVersions ? [ "23" ], tiVersion ? "5.1.1.GA", release ? false
+{ titaniumenv, fetchgit, target, androidPlatformVersions ? [ "23" ], tiVersion ? "5.1.2.GA", release ? false
 , rename ? false, stdenv ? null, newBundleId ? null, iosMobileProvisioningProfile ? null, iosCertificate ? null, iosCertificateName ? null, iosCertificatePassword ? null, iosVersion ? "8.1"
 , enableWirelessDistribution ? false, installURL ? null
 }:
@@ -8,8 +8,8 @@ assert rename -> (stdenv != null && newBundleId != null && iosMobileProvisioning
 let
   src = fetchgit {
     url = https://github.com/appcelerator/KitchenSink.git;
-    rev = "6e9f509069fafdebfa78e15b2d14f20a27a485cc";
-    sha256 = "0370dc0ca78b96a7e0befbff9cb1c248695e1aff66aceea98043bbb16c5121e6";
+    rev = "ec9edebf35030f61368000a8a9071dd7a0773884";
+    sha256 = "1j41w4nhcbl40x550pjgabqrach80f9dybv7ya32771wnw2000iy";
   };
   
   # Rename the bundle id to something else

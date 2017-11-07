@@ -1,11 +1,12 @@
-{ stdenv, icu, expat, zlib, bzip2, python, fixDarwinDylibNames
-, toolset ? if stdenv.isDarwin then "clang" else null
+{ stdenv, fetchurl, icu, expat, zlib, bzip2, python, fixDarwinDylibNames, libiconv
+, buildPlatform, hostPlatform
+, toolset ? if stdenv.cc.isClang then "clang" else null
 , enableRelease ? true
 , enableDebug ? false
 , enableSingleThreaded ? false
 , enableMultiThreaded ? true
-, enableShared ? true
-, enableStatic ? false
+, enableShared ? !(hostPlatform.libc == "msvcrt") # problems for now
+, enableStatic ? !enableShared
 , enablePIC ? false
 , enableExceptions ? false
 , taggedLayout ? ((enableRelease && enableDebug) || (enableSingleThreaded && enableMultiThreaded) || (enableShared && enableStatic))
@@ -53,19 +54,19 @@ let
 
   genericB2Flags = [
     "--includedir=$dev/include"
-    "--libdir=$lib/lib"
+    "--libdir=$out/lib"
     "-j$NIX_BUILD_CORES"
     "--layout=${layout}"
     "variant=${variant}"
     "threading=${threading}"
-    "runtime-link=${runtime-link}"
+  ] ++ optional (link != "static") "runtime-link=${runtime-link}" ++ [
     "link=${link}"
     "${cflags}"
   ] ++ optional (variant == "release") "debug-symbols=off";
 
   nativeB2Flags = [
-    "-sEXPAT_INCLUDE=${expat}/include"
-    "-sEXPAT_LIBPATH=${expat}/lib"
+    "-sEXPAT_INCLUDE=${expat.dev}/include"
+    "-sEXPAT_LIBPATH=${expat.out}/lib"
   ] ++ optional (toolset != null) "toolset=${toolset}"
     ++ optional (mpi != null) "--user-config=user-config.jam";
   nativeB2Args = concatStringsSep " " (genericB2Flags ++ nativeB2Flags);
@@ -76,8 +77,14 @@ let
     "--user-config=user-config.jam"
     "toolset=gcc-cross"
     "--without-python"
+  ] ++ optionals (hostPlatform.libc == "msvcrt") [
+    "target-os=windows"
+    "threadapi=win32"
+    "binary-format=pe"
+    "address-model=${toString hostPlatform.parsed.cpu.bits}"
+    "architecture=x86"
   ];
-  crossB2Args = concatMapStringsSep " " (genericB2Flags ++ crossB2Flags);
+  crossB2Args = concatStringsSep " " (genericB2Flags ++ crossB2Flags);
 
   builder = b2Args: ''
     ./b2 ${b2Args}
@@ -90,15 +97,11 @@ let
 
     # Let boost install everything else
     ./b2 ${b2Args} install
-
-    # Create a derivation which encompasses everything, making buildInputs nicer
-    mkdir -p $out/nix-support
-    echo "$dev $lib" > $out/nix-support/propagated-native-build-inputs
   '';
 
   commonConfigureFlags = [
     "--includedir=$(dev)/include"
-    "--libdir=$(lib)/lib"
+    "--libdir=$(out)/lib"
   ];
 
   fixup = ''
@@ -108,6 +111,8 @@ let
       find include \( -name '*.hpp' -or -name '*.h' -or -name '*.ipp' \) \
         -exec sed '1i#line 1 "{}"' -i '{}' \;
     )
+  '' + optionalString (hostPlatform.libc == "msvcrt") ''
+    ${stdenv.cc.prefix}ranlib "$out/lib/"*.a
   '';
 
 in
@@ -118,19 +123,18 @@ stdenv.mkDerivation {
   inherit src patches;
 
   meta = {
-    homepage = "http://boost.org/";
+    homepage = http://boost.org/;
     description = "Collection of C++ libraries";
     license = stdenv.lib.licenses.boost;
 
-    platforms = platforms.unix;
-    maintainers = with maintainers; [ simons wkennington ];
+    platforms = (if versionOlder version "1.59" then remove "aarch64-linux" else id) platforms.unix;
+    maintainers = with maintainers; [ peti wkennington ];
   };
 
   preConfigure = ''
-    NIX_LDFLAGS="$(echo $NIX_LDFLAGS | sed "s,$out,$lib,g")"
     if test -f tools/build/src/tools/clang-darwin.jam ; then
         substituteInPlace tools/build/src/tools/clang-darwin.jam \
-          --replace '@rpath/$(<[1]:D=)' "$lib/lib/\$(<[1]:D=)";
+          --replace '@rpath/$(<[1]:D=)' "$out/lib/\$(<[1]:D=)";
     fi;
   '' + optionalString (mpi != null) ''
     cat << EOF > user-config.jam
@@ -143,14 +147,15 @@ stdenv.mkDerivation {
 
   enableParallelBuilding = true;
 
-  buildInputs = [ icu expat zlib bzip2 python ]
+  buildInputs = [ expat zlib bzip2 libiconv ]
+    ++ stdenv.lib.optionals (hostPlatform == buildPlatform) [ python icu ]
     ++ stdenv.lib.optional stdenv.isDarwin fixDarwinDylibNames;
 
   configureScript = "./bootstrap.sh";
-  configureFlags = commonConfigureFlags ++ [
-    "--with-icu=${icu}"
-    "--with-python=${python.interpreter}"
-  ] ++ optional (toolset != null) "--with-toolset=${toolset}";
+  configureFlags = commonConfigureFlags
+    ++ [ "--with-python=${python.interpreter}" ]
+    ++ optional (hostPlatform == buildPlatform) "--with-icu=${icu.dev}"
+    ++ optional (toolset != null) "--with-toolset=${toolset}";
 
   buildPhase = builder nativeB2Args;
 
@@ -158,18 +163,14 @@ stdenv.mkDerivation {
 
   postFixup = fixup;
 
-  outputs = [ "out" "dev" "lib" ];
+  outputs = [ "out" "dev" ];
+  setOutputFlags = false;
 
   crossAttrs = rec {
-    buildInputs = [ expat.crossDrv zlib.crossDrv bzip2.crossDrv ];
-    # all buildInputs set previously fell into propagatedBuildInputs, as usual, so we have to
-    # override them.
-    propagatedBuildInputs = buildInputs;
     # We want to substitute the contents of configureFlags, removing thus the
     # usual --build and --host added on cross building.
     preConfigure = ''
       export configureFlags="--without-icu ${concatStringsSep " " commonConfigureFlags}"
-      set -x
       cat << EOF > user-config.jam
       using gcc : cross : $crossConfig-g++ ;
       EOF
@@ -177,5 +178,13 @@ stdenv.mkDerivation {
     buildPhase = builder crossB2Args;
     installPhase = installer crossB2Args;
     postFixup = fixup;
+  } // optionalAttrs (hostPlatform.libc == "msvcrt") {
+    patches = fetchurl {
+      url = "https://svn.boost.org/trac/boost/raw-attachment/ticket/7262/"
+          + "boost-mingw.patch";
+      sha256 = "0s32kwll66k50w6r5np1y5g907b7lcpsjhfgr7rsw7q5syhzddyj";
+    };
+
+    patchFlags = "-p0";
   };
 }

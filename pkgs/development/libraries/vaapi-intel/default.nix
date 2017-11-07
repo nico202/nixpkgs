@@ -1,13 +1,13 @@
-{ stdenv, fetchurl, gnum4, pkgconfig, python
+{ stdenv, fetchurl, gnum4, pkgconfig, python2
 , intel-gpu-tools, libdrm, libva, libX11, mesa_noglu, wayland
 }:
 
 stdenv.mkDerivation rec {
-  name = "libva-intel-driver-1.6.1";
+  name = "libva-intel-driver-1.7.3";
 
   src = fetchurl {
     url = "http://www.freedesktop.org/software/vaapi/releases/libva-intel-driver/${name}.tar.bz2";
-    sha256 = "1nsnl7gix22jbxqm7d5i3fk9gafwayhnsc3qjhbzxs6bbsffjmin";
+    sha256 = "0dzryi9x873p9gikzcb9wzwqv2j3wssm0b85ws63vqjszpckgbbn";
   };
 
   patchPhase = ''
@@ -24,7 +24,7 @@ stdenv.mkDerivation rec {
     "--enable-wayland"
   ];
 
-  nativeBuildInputs = [ gnum4 pkgconfig python ];
+  nativeBuildInputs = [ gnum4 pkgconfig python2 ];
 
   buildInputs = [ intel-gpu-tools libdrm libva libX11 mesa_noglu wayland ];
 
@@ -33,5 +33,6 @@ stdenv.mkDerivation rec {
     license = licenses.mit;
     description = "Intel driver for the VAAPI library";
     platforms = platforms.unix;
+    maintainers = with maintainers; [ garbas ];
   };
 }

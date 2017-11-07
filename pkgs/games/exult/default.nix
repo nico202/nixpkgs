@@ -30,6 +30,8 @@ stdenv.mkDerivation rec {
 
   enableParallelBuilding = true;
 
+  makeFlags = [ "DESTDIR=$(out)" ];
+
   postInstall =
     ''
       mkdir -p $out/share/exult/music
@@ -41,5 +43,6 @@ stdenv.mkDerivation rec {
     homepage = http://exult.sourceforge.net/;
     description = "A reimplementation of the Ultima VII game engine";
     maintainers = [ stdenv.lib.maintainers.eelco ];
+    platforms = stdenv.lib.platforms.unix;
   };
 }

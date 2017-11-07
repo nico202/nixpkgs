@@ -1,26 +1,26 @@
-{ stdenv, fetchFromGitHub, fetchpatch, autoreconfHook, boost, libevent, double_conversion, glog
-, google-gflags, python, libiberty, openssl }:
+{ stdenv, fetchFromGitHub, fetchpatch, autoreconfHook, pkgconfig, boost, libevent
+, double_conversion, glog, google-gflags, python, libiberty, openssl }:
 
 stdenv.mkDerivation rec {
-  version = "0.57.0";
   name = "folly-${version}";
+  version = "2017.07.24.00";
 
   src = fetchFromGitHub {
     owner = "facebook";
     repo = "folly";
     rev = "v${version}";
-    sha256 = "12b9bkwmndfwmsknc209kpplxn9wqmwr3p2h0l2szrppq4qqyfq9";
+    sha256 = "1cmqrm9yjxrw4xr1kcgzl0s7vcvp125wcgb0cz7whssgj11mf169";
   };
 
   patches = [
-    # Fix compatibility with Boost 1.59
+    # Fix compilation
     (fetchpatch {
-      url = "https://github.com/facebook/folly/commit/29193aca605bb93d82a3c92acd95bb342115f3a4.patch";
-      sha256 = "1ixpgq1wjr3i7madx4faw72n17ilc9cr435k5w1x95jr954m9j7b";
+      url = "https://github.com/facebook/folly/commit/9fc87c83d93f092859823ec32289ed1b6abeb683.patch";
+      sha256 = "0ix0grqlzm16hwa4rjbajjck8kr9lksh6c3gn7p3ihbbchsmlhvl";
     })
   ];
 
-  nativeBuildInputs = [ autoreconfHook python ];
+  nativeBuildInputs = [ autoreconfHook python pkgconfig ];
   buildInputs = [ libiberty boost libevent double_conversion glog google-gflags openssl ];
 
   postPatch = "cd folly";
@@ -28,14 +28,14 @@ stdenv.mkDerivation rec {
     patchShebangs build
   '';
 
-  configureFlags = [ "--with-boost-libdir=${boost.lib}/lib" ];
+  configureFlags = [ "--with-boost-libdir=${boost.out}/lib" ];
 
   enableParallelBuilding = true;
 
   meta = with stdenv.lib; {
     description = "An open-source C++ library developed and used at Facebook";
     homepage = https://github.com/facebook/folly;
-    license = licenses.mit;
+    license = licenses.asl20;
     # 32bit is not supported: https://github.com/facebook/folly/issues/103
     platforms = [ "x86_64-linux" ];
     maintainers = with maintainers; [ abbradar ];

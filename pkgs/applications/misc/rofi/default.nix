@@ -1,29 +1,32 @@
-{ stdenv, fetchurl, autoconf, automake, pkgconfig
-, libX11, libXinerama, libXft, pango, cairo
-, libstartup_notification, i3Support ? false, i3
+{ stdenv, fetchurl, autoreconfHook, pkgconfig, libxkbcommon, pango, which, git
+, cairo, glib, libxcb, xcbutil, xcbutilwm, xcbutilxrm, libstartup_notification
 }:
 
 stdenv.mkDerivation rec {
+  version = "1.3.1";
   name = "rofi-${version}";
-  version = "0.15.10";
 
   src = fetchurl {
-    url = "https://github.com/DaveDavenport/rofi/archive/${version}.tar.gz";
-    sha256 = "0wwdc9dj8qfmqv4pcllq78h38hqmz9s3hqf71fsk71byiid69ln9";
+    url = "https://github.com/DaveDavenport/rofi/releases/download/${version}/${name}.tar.gz";
+    sha256 = "09i3vd8k6zqphrm382fglsmxc4q6dg00xddzl96kakszgvdd4qfs";
   };
 
-  buildInputs = [ autoconf automake pkgconfig libX11 libXinerama libXft pango
-                  cairo libstartup_notification
-                ] ++ stdenv.lib.optional i3Support i3;
-
   preConfigure = ''
-    autoreconf -vif
+    patchShebangs "script"
+    # root not present in build /etc/passwd
+    sed -i 's/~root/~nobody/g' test/helper-expand.c
   '';
 
-  meta = {
-      description = "Window switcher, run dialog and dmenu replacement";
-      homepage = https://davedavenport.github.io/rofi;
-      license = stdenv.lib.licenses.mit;
-      maintainers = [ stdenv.lib.maintainers.mbakke ];
+  buildInputs = [ autoreconfHook pkgconfig libxkbcommon pango cairo git
+    libstartup_notification libxcb xcbutil xcbutilwm xcbutilxrm which
+  ];
+  doCheck = true;
+
+  meta = with stdenv.lib; {
+    description = "Window switcher, run dialog and dmenu replacement";
+    homepage = https://davedavenport.github.io/rofi;
+    license = licenses.mit;
+    maintainers = with maintainers; [ mbakke garbas ];
+    platforms = with platforms; unix;
   };
 }

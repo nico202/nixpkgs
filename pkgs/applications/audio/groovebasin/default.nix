@@ -1,9 +1,10 @@
-{ stdenv, fetchFromGitHub, makeWrapper, callPackage, libgroove, python, utillinux }:
+{ stdenv, fetchFromGitHub, makeWrapper, callPackage, libgroove, python, utillinux, nodejs }:
 
 with stdenv.lib;
 
 let
   nodePackages = callPackage (import ../../../top-level/node-packages.nix) {
+    inherit nodejs;
     neededNatives = [ libgroove python utillinux ];
     self = nodePackages;
     generated = ./package.nix;
@@ -61,5 +62,8 @@ in nodePackages.buildNodePackage rec {
 
       Groove Basin supports Last.fm scrobbling.
     '';
+    # groovebasin was built with nodejs 0.10 which reached end of LTS
+    # in October 216, it doesn't built with nodejs 4.x
+    broken = true;
   };
 }

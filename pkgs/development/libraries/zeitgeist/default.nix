@@ -1,6 +1,8 @@
-{ stdenv, fetchurl, pkgconfig, glib, sqlite, gnome3, vala
-, intltool, libtool, python, dbus_libs, telepathy_glib
-, gtk3, json_glib, librdf_raptor2, pythonPackages, dbus_glib }:
+{ stdenv, fetchurl, pkgconfig, glib, sqlite, gnome3, vala_0_23
+, intltool, libtool, dbus_libs, telepathy_glib
+, gtk3, json_glib, librdf_raptor2, dbus_glib
+, pythonSupport ? true, python2Packages
+}:
 
 stdenv.mkDerivation rec {
   version = "0.9.15";
@@ -11,15 +13,15 @@ stdenv.mkDerivation rec {
     sha256 = "07pnc7kmjpd0ncm32z6s3ny5p4zl52v9lld0n0f8sp6cw87k12p0";
   };
 
-  NIX_CFLAGS_COMPILE = "-I${glib}/include/gio-unix-2.0";
+  NIX_CFLAGS_COMPILE = "-I${glib.dev}/include/gio-unix-2.0";
 
   configureScript = "./autogen.sh";
 
   configureFlags = [ "--with-session-bus-services-dir=$(out)/share/dbus-1/services" ];
 
   buildInputs = [ pkgconfig glib sqlite gnome3.gnome_common intltool
-                  libtool python dbus_libs telepathy_glib vala dbus_glib
-                  gtk3 json_glib librdf_raptor2 pythonPackages.rdflib ];
+                  libtool dbus_libs telepathy_glib vala_0_23 dbus_glib
+                  gtk3 json_glib librdf_raptor2 python2Packages.rdflib ];
 
   prePatch = "patchShebangs .";
 
@@ -28,6 +30,13 @@ stdenv.mkDerivation rec {
   patchFlags = [ "-p0" ];
 
   enableParallelBuilding = true;
+
+  postFixup = ''
+  '' + stdenv.lib.optionalString pythonSupport ''
+    moveToOutput lib/${python2Packages.python.libPrefix} "$py"
+  '';
+
+  outputs = [ "out" ] ++ stdenv.lib.optional pythonSupport "py";
 
   meta = with stdenv.lib; {
     description = "A service which logs the users's activities and events";

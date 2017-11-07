@@ -8,16 +8,20 @@ in
 
 {
   imports = [
+    ./2bwm.nix
     ./afterstep.nix
     ./bspwm.nix
-    ./clfswm.nix
-    ./compiz.nix
     ./dwm.nix
+    ./exwm.nix
     ./fluxbox.nix
+    ./fvwm.nix
     ./herbstluftwm.nix
     ./i3.nix
+    ./jwm.nix
     ./metacity.nix
+    ./mwm.nix
     ./openbox.nix
+    ./pekwm.nix
     ./notion.nix
     ./ratpoison.nix
     ./sawfish.nix

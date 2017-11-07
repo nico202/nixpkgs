@@ -9,14 +9,13 @@ stdenv.mkDerivation rec {
   src = fetchgit {
     url = https://chromium.googlesource.com/chromiumos/platform/vboot_reference;
     rev = "refs/changes/${checkout}";
-    sha256 = "00qhwhh5ygrcfm9is8hrk1spqdvfs6aa744h10jbr03zics5bvac";
+    sha256 = "14d3a93ha5k4al4ib43nyn1ppx7kgb12xw6mkflhx8nxmx8827nc";
   };
 
-  buildInputs = [ pkgconfig openssl ] ++
-                (if libuuid == null
-                 then []
-                 else [ (stdenv.lib.overrideDerivation libuuid
-                          (args: { configureFlags = args.configureFlags + " --enable-static"; })) ]);
+  buildInputs = [ pkgconfig openssl stdenv.cc.libc.static ]
+    ++ stdenv.lib.optional (libuuid != null)
+         (libuuid.overrideAttrs (attrs:
+           { configureFlags = attrs.configureFlags ++ [ "--enable-static" ]; }));
 
   arch = if stdenv.system == "x86_64-linux" then "x86_64"
     else if stdenv.system == "i686-linux" then "x86"

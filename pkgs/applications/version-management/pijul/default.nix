@@ -1,27 +1,30 @@
-{ stdenv, fetchdarcs, ocaml, findlib, cryptokit, yojson, lmdb, zlib }:
+{ stdenv, fetchurl, rustPlatform, darwin }:
 
-stdenv.mkDerivation rec {
+with rustPlatform;
+
+buildRustPackage rec {
   name = "pijul-${version}";
-  version = "0.1";
+  version = "0.7.3";
 
-  src = fetchdarcs {
-    url = "http://pijul.org/";
-    rev = version;
-    sha256 = "0r189xx900w4smq6nyy1wnrjf9sgqrqw5as0l7k6gq0ra36szzff";
+  src = fetchurl {
+    url = "https://pijul.org/releases/${name}.tar.gz";
+    sha256 = "08cffv6nfp1iv9m2qhr9hggy9kg8xp07p8kqkjypfsdsb983vz5n";
   };
 
-  buildInputs = [ ocaml findlib cryptokit yojson lmdb zlib ];
+  sourceRoot = "${name}/pijul";
 
-  installPhase = ''
-    mkdir -p $out/bin
-    cp pijul $out/bin/
-  '';
+  buildInputs = stdenv.lib.optionals stdenv.isDarwin
+    (with darwin.apple_sdk.frameworks; [ Security ]);
+
+  doCheck = false;
+
+  depsSha256 = "1qzzpnkyw1bn5fnj06c80f7985v1q0rqcphrrrkpbi33lg5mzgbv";
 
   meta = with stdenv.lib; {
-    homepage = https://pijul.org/;
-    description = "Fast DVCS based on a categorical theory of patches";
-    license = licenses.gpl3;
-    platforms = stdenv.lib.platforms.unix;
-    maintainers = with maintainers; [ puffnfresh ];
+    description = "A distributed version control system";
+    homepage = https://pijul.org;
+    license = with licenses; [ gpl2Plus ];
+    maintainers = [ maintainers.gal_bolle ];
+    platforms = platforms.all;
   };
 }

@@ -8,7 +8,7 @@ stdenv.mkDerivation rec {
   src = fetchgit {
     url = "https://github.com/ckolivas/cgminer.git";
     rev = "refs/tags/v3.7.2";
-    sha256  = "0hl71328l19rlclajb6k9xsqybm2ln8g44p788gijpw4laj9yli6";
+    sha256  = "1xfzx91dpwjj1vmhas3v9ybs0p2i74lrhinijmpav15acfggm9fq";
   };
 
   buildInputs = [
@@ -39,7 +39,7 @@ stdenv.mkDerivation rec {
       monitoring, (over)clocking and fanspeed support for bitcoin and derivative
       coins. Do not use on multiple block chains at the same time!
     '';
-    homepage = "https://github.com/ckolivas/cgminer";
+    homepage = https://github.com/ckolivas/cgminer;
     license = licenses.gpl3;
     maintainers = [ maintainers.offline ];
     platforms = stdenv.lib.platforms.linux;

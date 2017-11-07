@@ -6,7 +6,7 @@
     overrideScope = f: callPackageWithScope (mkScope (fix' (extends f scope.__unfix__))) drv args;
   };
 
-  mkScope = scope : pkgs // pkgs.xorg // pkgs.gnome // scope;
+  mkScope = scope : pkgs // pkgs.xorg // pkgs.gnome2 // scope;
 
   idrisPackages = self: let
     defaultScope = mkScope self;
@@ -26,7 +26,7 @@
     };
 
     files = builtins.filter (n: n != "default") (pkgs.lib.mapAttrsToList (name: type: let
-      m = builtins.match "(.*)\.nix" name;
+      m = builtins.match "(.*)\\.nix" name;
     in if m == null then "default" else builtins.head m) (builtins.readDir ./.));
   in (builtins.listToAttrs (map (name: {
     inherit name;

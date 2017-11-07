@@ -23,7 +23,6 @@ lib.overrideDerivation (fetchurl ({
   postFetch =
     ''
       export PATH=${unzip}/bin:$PATH
-      mkdir $out
 
       unpackDir="$TMPDIR/unpack"
       mkdir "$unpackDir"
@@ -32,22 +31,20 @@ lib.overrideDerivation (fetchurl ({
       renamed="$TMPDIR/${baseNameOf url}"
       mv "$downloadedFile" "$renamed"
       unpackFile "$renamed"
-
-      shopt -s dotglob
     ''
     + (if stripRoot then ''
       if [ $(ls "$unpackDir" | wc -l) != 1 ]; then
         echo "error: zip file must contain a single file or directory."
+        echo "hint: Pass stripRoot=false; to fetchzip to assume flat list of files."
         exit 1
       fi
       fn=$(cd "$unpackDir" && echo *)
       if [ -f "$unpackDir/$fn" ]; then
-        mv "$unpackDir/$fn" "$out"
-      else
-        mv "$unpackDir/$fn"/* "$out/"
+        mkdir $out
       fi
+      mv "$unpackDir/$fn" "$out"
     '' else ''
-      mv "$unpackDir"/* "$out/"
+      mv "$unpackDir" "$out"
     '') #*/
     + extraPostFetch;
 } // removeAttrs args [ "stripRoot" "extraPostFetch" ]))

@@ -28,8 +28,11 @@ stdenv.mkDerivation rec {
   src = fetchgit {
     url = "https://github.com/google/chaps-linux";
     rev = "989aadc45cdb216ca35b0c97d13fc691576fa1d7";
-    sha256 = "c58e08e89d36050cd831116819d555f0e24e7bf11047cb18f2a2eead45ba67be";
+    sha256 = "0chk6pnn365d5kcz6vfqx1d0383ksk97icc0lzg0vvb0kvyj0ff1";
   };
+
+  # readdir_r(3) is deprecated in glibc >= 2.24
+  NIX_CFLAGS_COMPILE = "-Wno-error=deprecated-declarations";
 
   patches = [ ./fix_absolute_path.patch  ./fix_environment_variables.patch  ./fix_scons.patch  ./insert_prefetches.patch ];
 
@@ -73,7 +76,7 @@ stdenv.mkDerivation rec {
 
   meta = with stdenv.lib; {
     description = "PKCS #11 implementation based on trusted platform module (TPM)";
-    homepage = "https://www.chromium.org/developers/design-documents/chaps-technical-design";
+    homepage = https://www.chromium.org/developers/design-documents/chaps-technical-design;
     maintainers = [ maintainers.tstrobel ];
     platforms = [ "x86_64-linux" ];
     license = licenses.bsd3;

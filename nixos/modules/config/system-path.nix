@@ -38,8 +38,8 @@ let
       pkgs.strace
       pkgs.su
       pkgs.time
-      pkgs.texinfoInteractive
       pkgs.utillinux
+      pkgs.which # 88K size
     ];
 
 in
@@ -73,11 +73,11 @@ in
         description = "List of directories to be symlinked in <filename>/run/current-system/sw</filename>.";
       };
 
-      outputsToLink = mkOption {
+      extraOutputsToInstall = mkOption {
         type = types.listOf types.str;
-        default = [];
-        example = [ "doc" ];
-        description = "List of package outputs to be symlinked into <filename>/run/current-system/sw</filename>.";
+        default = [ ];
+        example = [ "doc" "info" "devdoc" ];
+        description = "List of additional package outputs to be symlinked into <filename>/run/current-system/sw</filename>.";
       };
 
     };
@@ -102,7 +102,8 @@ in
     environment.pathsToLink =
       [ "/bin"
         "/etc/xdg"
-        "/info"
+        "/etc/gtk-2.0"
+        "/etc/gtk-3.0"
         "/lib" # FIXME: remove and update debug-info.nix
         "/sbin"
         "/share/applications"
@@ -110,22 +111,25 @@ in
         "/share/doc"
         "/share/emacs"
         "/share/icons"
-        "/share/info"
         "/share/menus"
         "/share/mime"
         "/share/nano"
         "/share/org"
-        "/share/terminfo"
         "/share/themes"
         "/share/vim-plugins"
+        "/share/vulkan"
+        "/share/kservices5"
+        "/share/kservicetypes5"
+        "/share/kxmlgui5"
       ];
 
     system.path = pkgs.buildEnv {
       name = "system-path";
       paths = config.environment.systemPackages;
-      inherit (config.environment) pathsToLink outputsToLink;
+      inherit (config.environment) pathsToLink extraOutputsToInstall;
       ignoreCollisions = true;
       # !!! Hacky, should modularise.
+      # outputs TODO: note that the tools will often not be linked by default
       postBuild =
         ''
           if [ -x $out/bin/update-mime-database -a -w $out/share/mime ]; then

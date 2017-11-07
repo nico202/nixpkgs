@@ -1,4 +1,4 @@
-{ stdenv, fetchzip, ocaml, findlib, cstruct }:
+{ stdenv, fetchzip, ocaml, findlib, ocamlbuild, cstruct }:
 
 let version = "1.0.0"; in
 
@@ -10,7 +10,7 @@ stdenv.mkDerivation {
     sha256 = "0g4cq4bsksga15fa5ln083gkglawknbnhi2s4k8yk0yi5xngvwm4";
   };
 
-  buildInputs = [ ocaml findlib ];
+  buildInputs = [ ocaml findlib ocamlbuild ];
   propagatedBuildInputs = [ cstruct ];
   configureFlags = "--enable-tests";
   doCheck = true;
@@ -22,6 +22,6 @@ stdenv.mkDerivation {
     homepage = https://github.com/mirage/ocaml-hex;
     license = stdenv.lib.licenses.isc;
     maintainers = with stdenv.lib.maintainers; [ vbgl ];
-    platforms = ocaml.meta.platforms;
+    platforms = ocaml.meta.platforms or [];
   };
 }

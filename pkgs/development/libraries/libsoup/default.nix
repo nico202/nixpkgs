@@ -1,9 +1,10 @@
 { stdenv, fetchurl, glib, libxml2, pkgconfig
-, gnomeSupport ? false, libgnome_keyring, sqlite, glib_networking, gobjectIntrospection
+, gnomeSupport ? true, libgnome_keyring3, sqlite, glib_networking, gobjectIntrospection
+, valaSupport ? true, vala_0_32
 , libintlOrEmpty
 , intltool, python }:
 let
-  majorVersion = "2.50";
+  majorVersion = "2.60";
   version = "${majorVersion}.0";
 in
 stdenv.mkDerivation {
@@ -11,25 +12,31 @@ stdenv.mkDerivation {
 
   src = fetchurl {
     url = "mirror://gnome/sources/libsoup/${majorVersion}/libsoup-${version}.tar.xz";
-    sha256 = "1e01365ac4af3817187ea847f9d3588c27eee01fc519a5a7cb212bb78b0f667b";
+    sha256 = "b324edbecda0884143c0853b4a2bd5bd37fb3761f12f293c621ff34b9acdc84c";
   };
 
-  patchPhase = ''
+  prePatch = ''
     patchShebangs libsoup/
+  '' + stdenv.lib.optionalString valaSupport
+  ''
+     substituteInPlace libsoup/Makefile.in --replace "\$(DESTDIR)\$(vapidir)" "\$(DESTDIR)\$(girdir)/../vala/vapi"
   '';
 
-  buildInputs = libintlOrEmpty ++ [ intltool python sqlite ];
+  outputs = [ "out" "dev" ];
+
+  buildInputs = libintlOrEmpty ++ [ intltool python sqlite ]
+    ++ stdenv.lib.optionals valaSupport [ vala_0_32 ];
   nativeBuildInputs = [ pkgconfig ];
   propagatedBuildInputs = [ glib libxml2 gobjectIntrospection ]
-    ++ stdenv.lib.optionals gnomeSupport [ libgnome_keyring ];
-  passthru.propagatedUserEnvPackages = [ glib_networking ];
+    ++ stdenv.lib.optionals gnomeSupport [ libgnome_keyring3 ];
+  passthru.propagatedUserEnvPackages = [ glib_networking.out ];
 
   # glib_networking is a runtime dependency, not a compile-time dependency
-  configureFlags = "--disable-tls-check" + stdenv.lib.optionalString (!gnomeSupport) " --without-gnome";
+  configureFlags = "--disable-tls-check"
+    + " --enable-vala=${if valaSupport then "yes" else "no"}"
+    + stdenv.lib.optionalString (!gnomeSupport) " --without-gnome";
 
   NIX_CFLAGS_COMPILE = stdenv.lib.optionalString stdenv.isDarwin "-lintl";
-
-  postInstall = "rm -rf $out/share/gtk-doc";
 
   meta = {
     inherit (glib.meta) maintainers platforms;

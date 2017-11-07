@@ -13,6 +13,7 @@
 , zlib
 , compiler-rt_src
 , debugVersion ? false
+, enableSharedLibraries ? !stdenv.isDarwin
 }:
 
 let
@@ -43,13 +44,17 @@ in stdenv.mkDerivation rec {
     "-DLLVM_BUILD_TESTS=ON"
     "-DLLVM_ENABLE_FFI=ON"
     "-DLLVM_REQUIRES_RTTI=1"
-  ] ++ stdenv.lib.optionals (!isDarwin) [
+  ] ++ stdenv.lib.optional enableSharedLibraries
     "-DBUILD_SHARED_LIBS=ON"
-    "-DLLVM_BINUTILS_INCDIR=${binutils}/include"
-  ] ++ stdenv.lib.optionals ( isDarwin) [
+    ++ stdenv.lib.optional (!isDarwin)
+    "-DLLVM_BINUTILS_INCDIR=${stdenv.lib.getDev binutils}/include"
+    ++ stdenv.lib.optionals ( isDarwin) [
     "-DCMAKE_CXX_FLAGS=-stdlib=libc++"
     "-DCAN_TARGET_i386=false"
   ];
+
+  patches = [ ./fix-15974.patch ] ++
+    stdenv.lib.optionals (!stdenv.isDarwin) [../fix-llvm-config.patch ];
 
   postBuild = ''
     rm -fR $out
@@ -68,8 +73,9 @@ in stdenv.mkDerivation rec {
   meta = {
     description = "Collection of modular and reusable compiler and toolchain technologies";
     homepage    = http://llvm.org/;
-    license     = stdenv.lib.licenses.bsd3;
+    license     = stdenv.lib.licenses.ncsa;
     maintainers = with stdenv.lib.maintainers; [ lovek323 raskin viric ];
     platforms   = stdenv.lib.platforms.all;
   };
 }
+

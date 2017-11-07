@@ -164,7 +164,7 @@ in
 
         description = "Define the virtual hosts";
 
-        type = types.loaOf types.optionSet;
+        type = with types; loaOf (submodule vHostOpts);
 
         example = {
           myhost = {
@@ -180,7 +180,6 @@ in
           };
         };
 
-        options = [ vHostOpts ];
       };
 
       ssl = mkOption {
@@ -196,6 +195,7 @@ in
       };
 
       extraConfig = mkOption {
+        type = types.lines;
         default = '''';
         description = "Additional prosody configuration";
       };
@@ -219,7 +219,7 @@ in
 
       data_path = "/var/lib/prosody"
 
-      allow_registration = ${ if cfg.allowRegistration then "true" else "false" };
+      allow_registration = ${boolToString cfg.allowRegistration};
 
       ${ optionalString cfg.modules.console "console_enabled = true;" }
 
@@ -244,7 +244,7 @@ in
 
       ${ lib.concatStringsSep "\n" (lib.mapAttrsToList (n: v: ''
         VirtualHost "${v.domain}"
-          enabled = ${if v.enabled then "true" else "false"};
+          enabled = ${boolToString v.enabled};
           ${ optionalString (v.ssl != null) (createSSLOptsStr v.ssl) }
           ${ v.extraConfig }
         '') cfg.virtualHosts) }
@@ -265,7 +265,8 @@ in
     systemd.services.prosody = {
 
       description = "Prosody XMPP server";
-      after = [ "network.target" ];
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
       wantedBy = [ "multi-user.target" ];
       serviceConfig = {
         User = "prosody";

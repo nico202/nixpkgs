@@ -1,4 +1,6 @@
-{ stdenv, fetchurl, libusb1, qt4 }:
+{ stdenv, fetchurl, pkgconfig, libusb1
+, qtbase, qttools, makeWrapper, qmake
+, withEspeak ? false, espeak ? null }:
 
 stdenv.mkDerivation  rec {
   name = "rockbox-utility-${version}";
@@ -9,20 +11,29 @@ stdenv.mkDerivation  rec {
     sha256 = "0k3ycga3b0jnj13whwiip2l0gx32l50pnbh7kfima87nq65aaa5w";
   };
 
-  buildInputs = [ libusb1 qt4 ];
+  buildInputs = [ libusb1 qtbase qttools ]
+    ++ stdenv.lib.optional withEspeak espeak;
+  nativeBuildInputs = [ makeWrapper pkgconfig qmake ];
 
-  preBuild = ''
+  preConfigure = ''
     cd rbutil/rbutilqt
-    qmake
   '';
 
   installPhase = ''
-    mkdir -p $out/bin 
-    cp RockboxUtility $out/bin
+    runHook preInstall
+
+    install -Dm755 RockboxUtility $out/bin/rockboxutility
+    ln -s $out/bin/rockboxutility $out/bin/RockboxUtility
+    wrapProgram $out/bin/rockboxutility \
+    ${stdenv.lib.optionalString withEspeak ''
+      --prefix PATH : ${espeak}/bin
+    ''}
+
+    runHook postInstall
   '';
 
   meta = with stdenv.lib; {
-    description = "open source firmware for mp3 players";
+    description = "Open source firmware for mp3 players";
     homepage = http://www.rockbox.org;
     license = licenses.gpl2;
     platforms = platforms.linux;

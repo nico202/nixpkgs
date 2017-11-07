@@ -1,24 +1,45 @@
 { stdenv, fetchurl, cairo, colord, glib, gtk3, gusb, intltool, itstool
-, libusb1, libxml2, pkgconfig, sane-backends, vala, wrapGAppsHook }:
+, libusb1, libxml2, pkgconfig, sane-backends, vala_0_32, wrapGAppsHook
+, gnome3 }:
 
-let version = "3.19.3"; in
 stdenv.mkDerivation rec {
   name = "simple-scan-${version}";
+  version = "${major_version}.0.1";
+  major_version = "3.22";
 
   src = fetchurl {
-    sha256 = "0il7ikd5hj9mgzrivm01g572g9101w8la58h3hjyakwcfw3jp976";
-    url = "https://launchpad.net/simple-scan/3.19/${version}/+download/${name}.tar.xz";
+    url = "https://launchpad.net/simple-scan/${major_version}/${version}/+download/${name}.tar.xz";
+    sha256 = "0l1b3llkdlqq0bcjx1cadba67l2zb4zfykdaprpjbjbr6gkbc1f5";
   };
 
-  buildInputs = [ cairo colord glib gusb gtk3 libusb1 libxml2 sane-backends
-    vala ];
+  buildInputs = [ cairo colord glib gnome3.defaultIconTheme gusb gtk3 libusb1 libxml2 sane-backends vala_0_32 ];
   nativeBuildInputs = [ intltool itstool pkgconfig wrapGAppsHook ];
 
   configureFlags = [ "--disable-packagekit" ];
 
+  patchPhase = ''
+    sed -i -e 's#Icon=scanner#Icon=simple-scan#g' ./data/simple-scan.desktop.in
+  '';
+
   preBuild = ''
-    # Clean up stale generated .c files still referencing packagekit headers:
+    # Clean up stale .c files referencing packagekit headers as of 3.20.0:
     make clean
+  '';
+
+  postInstall = ''
+    mkdir -p $out/share/icons
+    mv $out/share/simple-scan/icons/* $out/share/icons/
+    (
+    cd ${gnome3.defaultIconTheme}/share/icons/Adwaita
+    for f in `find . | grep 'scanner\.'`
+    do
+      local outFile="`echo "$out/share/icons/hicolor/$f" | sed \
+        -e 's#/devices/#/apps/#g' \
+        -e 's#scanner\.#simple-scan\.#g'`"
+      mkdir -p "`realpath -m "$outFile/.."`"
+      cp "$f" "$outFile"
+    done
+    )
   '';
 
   enableParallelBuilding = true;
@@ -26,7 +47,6 @@ stdenv.mkDerivation rec {
   doCheck = true;
 
   meta = with stdenv.lib; {
-    inherit version;
     description = "Simple scanning utility";
     longDescription = ''
       A really easy way to scan both documents and photos. You can crop out the

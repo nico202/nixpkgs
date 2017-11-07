@@ -1,44 +1,40 @@
 { stdenv, fetchurl }:
 
 let
-  fetchDB = src: name: sha256: fetchurl {
-    inherit name sha256;
+  fetchDB = src: sha256: fetchurl {
+    inherit sha256;
     url = "https://geolite.maxmind.com/download/geoip/database/${src}";
   };
-
-  # Annoyingly, these files are updated without a change in URL. This means that
-  # builds will start failing every month or so, until the hashes are updated.
-  version = "2016-01-06";
 in
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   name = "geolite-legacy-${version}";
+  version = "2017-09-17";
 
   srcGeoIP = fetchDB
-    "GeoLiteCountry/GeoIP.dat.gz" "GeoIP.dat.gz"
-    "07h1ha7z9i877ph41fw4blcfb11ynv8k9snrrsgsjrvv2yqvsc37";
+    "GeoLiteCountry/GeoIP.dat.gz"
+    "04akk0jczvki8rdvz6z6v5s26ds0m27953lzvp3v0fsg7rl08q5n";
   srcGeoIPv6 = fetchDB
-    "GeoIPv6.dat.gz" "GeoIPv6.dat.gz"
-    "14wsc0w8ir5q1lq6d9bpr03qvrbi2i0g04gkfcwbnh63yqxc31m9";
+    "GeoIPv6.dat.gz"
+    "0i0885vvj0s5sysyafvk8pc8gr3znh7gmiy8rp4iiai7qnbylb7y";
   srcGeoLiteCity = fetchDB
-    "GeoLiteCity.dat.xz" "GeoIPCity.dat.xz"
-    "1nra64shc3bp1d6vk9rdv7wyd8jmkgsybqgr3imdg7fv837kwvnh";
+    "GeoLiteCity.dat.gz"
+    "1yqxqfndnsvqc3hrs0nm6nvs0wp8jh9phs0yzrn48rlb9agcb8gj";
   srcGeoLiteCityv6 = fetchDB
-    "GeoLiteCityv6-beta/GeoLiteCityv6.dat.gz" "GeoIPCityv6.dat.gz"
-    "1fksbnmda2a05cpax41h9r7jhi8102q41kl5nij4ai42d6yqy73x";
+    "GeoLiteCityv6-beta/GeoLiteCityv6.dat.gz"
+    "05grm006r723l9zm7pdmwwycc658ni858hcrcf5mysv0hmc3wqb2";
   srcGeoIPASNum = fetchDB
-    "asnum/GeoIPASNum.dat.gz" "GeoIPASNum.dat.gz"
-    "15sagwf6l5fmfgf780qyf1sc3kcmxkv37510h7b9db76mzmicgln";
+    "asnum/GeoIPASNum.dat.gz"
+    "1gpvsqvq9z9pg9zfn86i50fb481llfyn79r1jwddwfflp1qqfrrv";
   srcGeoIPASNumv6 = fetchDB
-    "asnum/GeoIPASNumv6.dat.gz" "GeoIPASNumv6.dat.gz"
-    "0dyrpis64sgijl701vfpwklxcdr1wq3z0saymaw6scy3a1anpyfi";
+    "asnum/GeoIPASNumv6.dat.gz"
+    "0nmhz82dn9clm5w2y6z861ifj7i761spy1p1zcam93046cdpqqaa";
 
   meta = with stdenv.lib; {
-    inherit version;
     description = "GeoLite Legacy IP geolocation databases";
     homepage = https://geolite.maxmind.com/download/geoip;
     license = licenses.cc-by-sa-30;
     platforms = platforms.all;
-    maintainers = with maintainers; [ nckx ];
+    maintainers = with maintainers; [ nckx fpletz ];
   };
 
   builder = ./builder.sh;

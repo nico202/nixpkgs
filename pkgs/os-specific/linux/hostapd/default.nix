@@ -3,12 +3,27 @@
 with stdenv.lib;
 stdenv.mkDerivation rec {
   name = "hostapd-${version}";
-  version = "2.4";
+  version = "2.6";
 
   src = fetchurl {
-    url = "http://hostap.epitest.fi/releases/${name}.tar.gz";
-    sha256 = "0zv5pnfrp6z7jjbskzgdb2rlmlbvdxmmis7ca94x5jy9s5mypq3g";
+    url = "https://w1.fi/releases/${name}.tar.gz";
+    sha256 = "0z8ilypad82q3l6q6kbv6hczvhjn8k63j8051x5yqfyjq686nlh1";
   };
+
+  patches = [
+    (fetchurl {
+      url = "https://w1.fi/cgit/hostap/patch/?id=0d42179e1246f996d334c8bd18deca469fdb1add";
+      sha256 = "0w5n3ypwavq5zlyfxpcyvbaf96g59xkwbw9xwpjyzb7h5j264615";
+    })
+    (fetchurl {
+      url = "https://w1.fi/cgit/hostap/patch/?id=df426738fb212d62b132d9bb447f0128194e00ab";
+      sha256 = "0ps2prjijlcgv1i97xb5ypw840dhkc7ja1aw8zhlbrap7pbgi1mm";
+    })
+    (fetchurl {
+      url = "https://w1.fi/cgit/hostap/patch/?id=b70d508c50e8e2d2b8fb96ae44ae10f84cf0c1ae";
+      sha256 = "0pslmsbay2cy1k07w1mdcr0b8w059jkrqrr9zi1aljvkm3vbwhj1";
+    })
+  ];
 
   nativeBuildInputs = [ pkgconfig ];
   buildInputs = [ libnl openssl sqlite ];

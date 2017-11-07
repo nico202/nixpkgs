@@ -1,4 +1,4 @@
-{ lib, stdenv, fetchurl, qtbase, makeWrapper }:
+{ lib, stdenv, fetchurl, qtbase, qmake, makeWrapper }:
 
 stdenv.mkDerivation {
   name = "awesomebump-4.0";
@@ -10,9 +10,8 @@ stdenv.mkDerivation {
 
   setSourceRoot = "sourceRoot=$(echo */Sources)";
 
-  buildInputs = [ qtbase makeWrapper ];
-
-  preBuild = "qmake";
+  nativeBuildInputs = [ makeWrapper qmake ];
+  buildInputs = [ qtbase ];
 
   enableParallelBuilding = true;
 
@@ -28,6 +27,11 @@ stdenv.mkDerivation {
       makeWrapper $d/AwesomeBump $out/bin/AwesomeBump \
         --run "cd $d"
     '';
+
+  # RPATH in /tmp hack
+  preFixup = ''
+    rm -r $NIX_BUILD_TOP/__nix_qt5__
+  '';
 
   meta = {
     homepage = https://github.com/kmkolasinski/AwesomeBump;

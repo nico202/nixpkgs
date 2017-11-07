@@ -1,4 +1,4 @@
-{ stdenv, fetchurl }:
+{ stdenv, fetchurl, fetchpatch, pkgs }:
 
 let
 
@@ -17,17 +17,6 @@ let
         '';
       };
     };
-
-  grsecPatch = { grversion ? "3.1", kversion, revision, branch, sha256 }:
-    { name = "grsecurity-${grversion}-${kversion}";
-      inherit grversion kversion revision;
-      patch = fetchurl {
-        url = "http://grsecurity.net/${branch}/grsecurity-${grversion}-${kversion}-${revision}.patch";
-        inherit sha256;
-      };
-      features.grsecurity = true;
-    };
-
 in
 
 rec {
@@ -37,10 +26,9 @@ rec {
       patch = ./bridge-stp-helper.patch;
     };
 
-  no_xsave =
-    { name = "no-xsave";
-      patch = ./no-xsave.patch;
-      features.noXsave = true;
+  p9_fixes =
+    { name = "p9-fixes";
+      patch = ./p9-fixes.patch;
     };
 
   mips_fpureg_emu =
@@ -58,49 +46,29 @@ rec {
       patch = ./mips-ext3-n32.patch;
     };
 
-  ubuntu_fan =
-    { name = "ubuntu-fan";
-      patch = ./ubuntu-fan-3.patch;
+  modinst_arg_list_too_long =
+    { name = "modinst-arglist-too-long";
+      patch = ./modinst-arg-list-too-long.patch;
     };
 
-  ubuntu_fan_4 =
-    { name = "ubuntu-fan";
-      patch = ./ubuntu-fan-4.patch;
+  genksyms_fix_segfault =
+    { name = "genksyms-fix-segfault";
+      patch = ./genksyms-fix-segfault.patch;
     };
 
-  ubuntu_unprivileged_overlayfs =
-    { name = "ubuntu-unprivileged-overlayfs";
-      patch = ./ubuntu-unprivileged-overlayfs.patch;
+  cpu-cgroup-v2 = import ./cpu-cgroup-v2-patches;
+
+  DCCP_double_free_vulnerability_CVE-2017-6074 = rec
+    { name = "DCCP_double_free_vulnerability_CVE-2017-6074.patch";
+      patch = fetchpatch {
+        inherit name;
+        url = "https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/patch/?id=5edabca9d4cff7f1f2b68f0bac55ef99d9798ba4";
+        sha256 = "10dmv3d3gj8rvj9h40js4jh8xbr5wyaqiy0kd819mya441mj8ll2";
+      };
     };
 
-  tuxonice_3_10 = makeTuxonicePatch {
-    version = "2013-11-07";
-    kernelVersion = "3.10.18";
-    sha256 = "00b1rqgd4yr206dxp4mcymr56ymbjcjfa4m82pxw73khj032qw3j";
+  tag_hardened = rec {
+    name = "tag-hardened";
+    patch = ./tag-hardened.patch;
   };
-
-  grsecurity_stable = grsecPatch
-    { kversion  = "3.14.51";
-      revision  = "201508181951";
-      branch    = "stable";
-      sha256    = "1sp1gwa7ahzflq7ayb51bg52abrn5zx1hb3pff3axpjqq7vfai6f";
-    };
-
-  grsecurity_unstable = grsecPatch
-    { kversion  = "4.2.3";
-      revision  = "201510130858";
-      branch    = "test";
-      sha256    = "0ndzcx9i94c065dlyvgykmin5bfkbydrv0kxxq52a4c9is6nlsrb";
-    };
-
-  grsec_fix_path =
-    { name = "grsec-fix-path";
-      patch = ./grsec-path.patch;
-    };
-
-  crc_regression =
-    { name = "crc-backport-regression";
-      patch = ./crc-regression.patch;
-    };
-
 }

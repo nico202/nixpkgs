@@ -12,7 +12,6 @@ in {
     enable = mkOption {
       type = types.bool;
       default = false;
-      example = true;
       description = ''
         Enable Redshift to change your screen's colour temperature depending on
         the time of day.
@@ -76,6 +75,7 @@ in {
     package = mkOption {
       type = types.package;
       default = pkgs.redshift;
+      defaultText = "pkgs.redshift";
       description = ''
         redshift derivation to use.
       '';
@@ -93,11 +93,10 @@ in {
   };
 
   config = mkIf cfg.enable {
-    systemd.services.redshift = {
+    systemd.user.services.redshift = {
       description = "Redshift colour temperature adjuster";
-      requires = [ "display-manager.service" ];
-      after = [ "display-manager.service" ];
-      wantedBy = [ "graphical.target" ];
+      wantedBy = [ "graphical-session.target" ];
+      partOf = [ "graphical-session.target" ];
       serviceConfig = {
         ExecStart = ''
           ${cfg.package}/bin/redshift \
@@ -106,10 +105,9 @@ in {
             -b ${toString cfg.brightness.day}:${toString cfg.brightness.night} \
             ${lib.strings.concatStringsSep " " cfg.extraOptions}
         '';
-	RestartSec = 3;
+        RestartSec = 3;
+        Restart = "always";
       };
-      environment = { DISPLAY = ":0"; };
-      serviceConfig.Restart = "always";
     };
   };
 

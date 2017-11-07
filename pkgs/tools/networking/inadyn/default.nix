@@ -1,31 +1,33 @@
-{ stdenv, fetchFromGitHub, gnutls33, autoreconfHook }:
+{ stdenv, fetchurl, fetchpatch, autoreconfHook, pkgconfig
+, gnutls, libite, libconfuse }:
 
 let
-  version = "1.99.13";
+  version = "2.1";
 in
 stdenv.mkDerivation {
   name = "inadyn-${version}";
 
-  src = fetchFromGitHub {
-    repo = "inadyn";
-    owner = "troglobit";
-    rev = version;
-    sha256 = "19z8si66b2kwb7y29qpd8y45rhg5wrycwkdgjqqp98sg5yq8p7v0";
+  src = fetchurl {
+    url = "https://github.com/troglobit/inadyn/releases/download/v${version}/inadyn-${version}.tar.xz";
+    sha256 = "1b5khr2y5q1x2mn08zrnjf9hsals4y403mhsc1s7016w3my9lqw7";
   };
 
-  preConfigure = ''
-    export makeFlags=prefix=$out
-  '';
+  patches = [
+    ./remove-unused-macro.patch
+    (fetchpatch {
+      url = "https://github.com/troglobit/inadyn/commit/ed3a7761015441b5d5cacd691b7aa114da048bef.patch";
+      sha256 = "1passghmjd7gmrfcqkfqw9lvg8l22s91nm65ys3n3rylzsgaaq8i";
+     })
+  ];
 
-  buildInputs = [ gnutls33 autoreconfHook ];
-
-  NIX_CFLAGS_COMPILE = "-Wno-error=cpp";
+  nativeBuildInputs = [ autoreconfHook pkgconfig ];
+  buildInputs = [ gnutls libite libconfuse ];
 
   meta = {
     homepage = http://inadyn.sourceforge.net/;
     description = "Free dynamic DNS client";
     license = stdenv.lib.licenses.gpl2Plus;
     maintainers = with stdenv.lib.maintainers; [viric];
-    platforms = with stdenv.lib.platforms; all;
+    platforms = with stdenv.lib.platforms; linux;
   };
 }

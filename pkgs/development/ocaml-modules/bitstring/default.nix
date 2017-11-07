@@ -1,15 +1,14 @@
-{stdenv, fetchgit, buildOcaml, time, autoconf, automake}:
+{ stdenv, fetchurl, buildOcaml, time, autoconf, automake }:
 
 buildOcaml rec {
   name = "bitstring";
-  version = "f1673f8"; 
-  src = fetchgit {
-    url = "https://code.google.com/p/bitstring/";
-    rev = "f1673f8";
-    sha256 = "1lh97qf1b7mq64pxkphr2w91ri5hfwg58cpjb2xd8a453c9jylw4";
+  version = "2.1.0";
+  src = fetchurl {
+    url = http://github.com/xguerin/bitstring/archive/v2.1.0.tar.gz;
+    sha256 = "0miw4banfpmx4kxrckpqr57b1fcmsqdmspyjx6gqjd4kghm4l7xj";
   };
 
-  patches = [ ./camlp4-git.patch ./meta.patch ./srcdir.patch ];
+  patches = [ ./camlp4-git.patch ./srcdir.patch ];
 
   buildInputs = [time autoconf automake];
   doCheck = true;

@@ -1,19 +1,19 @@
-{ stdenv, fetchFromGitHub, buildPythonPackage, python27Packages, pkgs }:
+{ stdenv, fetchFromGitHub, python27Packages, glib, cairo, pango, pkgconfig, libxcb, xcbutilcursor }:
 
 let cairocffi-xcffib = python27Packages.cairocffi.override {
     pythonPath = [ python27Packages.xcffib ];
   };
 in
 
-buildPythonPackage rec {
+python27Packages.buildPythonApplication rec {
   name = "qtile-${version}";
-  version = "0.10.3";
+  version = "0.10.4";
 
   src = fetchFromGitHub {
     owner = "qtile";
     repo = "qtile";
     rev = "v${version}";
-    sha256 = "02252sfcniijkpk5rfgb800wvdpl223xrx1bhrxpzgggpgfbnmn6";
+    sha256 = "0rwklzgkp3x242xql6qmfpfnhr788hd3jc1l80pc5ybxlwyfx59i";
   };
 
   patches = [
@@ -24,20 +24,20 @@ buildPythonPackage rec {
 
   postPatch = ''
     substituteInPlace libqtile/manager.py --subst-var-by out $out
-    substituteInPlace libqtile/pangocffi.py --subst-var-by glib ${pkgs.glib}
-    substituteInPlace libqtile/pangocffi.py --subst-var-by pango ${pkgs.pango}
-    substituteInPlace libqtile/xcursors.py --subst-var-by xcb-cursor ${pkgs.xorg.xcbutilcursor}
+    substituteInPlace libqtile/pangocffi.py --subst-var-by glib ${glib.out}
+    substituteInPlace libqtile/pangocffi.py --subst-var-by pango ${pango.out}
+    substituteInPlace libqtile/xcursors.py --subst-var-by xcb-cursor ${xcbutilcursor.out}
   '';
 
-  buildInputs = [ pkgs.pkgconfig pkgs.glib pkgs.xorg.libxcb pkgs.cairo pkgs.pango python27Packages.xcffib ];
+  buildInputs = [ pkgconfig glib libxcb cairo pango python27Packages.xcffib ];
 
-  pythonPath = with python27Packages; [ xcffib cairocffi-xcffib trollius readline];
+  pythonPath = with python27Packages; [ xcffib cairocffi-xcffib trollius ];
 
   postInstall = ''
     wrapProgram $out/bin/qtile \
-      --set QTILE_WRAPPER '"$0"' \
-      --set QTILE_SAVED_PYTHONPATH '"$PYTHONPATH"' \
-      --set QTILE_SAVED_PATH '"$PATH"'
+      --set QTILE_WRAPPER '$0' \
+      --set QTILE_SAVED_PYTHONPATH '$PYTHONPATH' \
+      --set QTILE_SAVED_PATH '$PATH'
   '';
 
   meta = with stdenv.lib; {

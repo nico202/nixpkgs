@@ -1,4 +1,4 @@
-{ stdenv, fetchurl, pkgconfig, telepathy_glib, libxslt, makeWrapper, upower }:
+{ stdenv, fetchurl, pkgconfig, gnome3, telepathy_glib, libxslt, makeWrapper, upower }:
 
 stdenv.mkDerivation rec {
   name = "${pname}-5.16.3";
@@ -9,7 +9,7 @@ stdenv.mkDerivation rec {
     sha256 = "0zcbx69k0d3p2pjh3g7sa3q2zkd5xchxkqsmlfn3fwxaz0pmsmvi";
   };
 
-  buildInputs = [ telepathy_glib makeWrapper /*upower*/ ]; # ToDo: optional stuff missing
+  buildInputs = [ telepathy_glib telepathy_glib.python makeWrapper /*upower*/ ]; # ToDo: optional stuff missing
   # 5.16.3 won't build with upower-0.99. Arch and Debian choose to disable it
 
   nativeBuildInputs = [ pkgconfig libxslt ];
@@ -18,6 +18,7 @@ stdenv.mkDerivation rec {
 
   preFixup = ''
     wrapProgram "$out/libexec/mission-control-5" \
+      --prefix GIO_EXTRA_MODULES : "${stdenv.lib.getLib gnome3.dconf}/lib/gio/modules" \
       --prefix XDG_DATA_DIRS : "$GSETTINGS_SCHEMAS_PATH"
   '';
 

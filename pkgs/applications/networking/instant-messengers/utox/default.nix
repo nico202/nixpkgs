@@ -1,44 +1,39 @@
-{ stdenv, fetchFromGitHub, pkgconfig, libtoxcore, dbus, libvpx, libX11, openal, freetype, libv4l
-, libXrender, fontconfig, libXext, libXft }:
+{ stdenv, fetchFromGitHub, cmake, pkgconfig, libtoxcore, filter-audio, dbus, libvpx, libX11, openal, freetype, libv4l
+, libXrender, fontconfig, libXext, libXft, utillinux, git, libsodium }:
 
-let
-
-  filteraudio = stdenv.mkDerivation rec {
-    name = "filter_audio-20150128";
-
-    src = fetchFromGitHub {
-      owner = "irungentoo";
-      repo = "filter_audio";
-      rev = "76428a6cda";
-      sha256 = "0c4wp9a7dzbj9ykfkbsxrkkyy0nz7vyr5map3z7q8bmv9pjylbk9";
-    };
-
-    doCheck = false;
-
-    makeFlags = "PREFIX=$(out)";
-  };
-
-in stdenv.mkDerivation rec {
-  name = "utox-dev-20150130";
+stdenv.mkDerivation rec {
+  name = "utox-${version}";
+  # >= 0.14 should have unit tests and dbus support
+  version = "0.13.1";
 
   src = fetchFromGitHub {
-    owner = "notsecure";
-    repo = "uTox";
-    rev = "cb7b8d09b08";
-    sha256 = "0vg9h07ipwyf7p54p43z9bcymy0skiyjbm7zvyjg7r5cvqxv1vpa";
+    owner  = "uTox";
+    repo   = "uTox";
+    rev    = "v${version}";
+    sha256 = "07aa92isknxf7531jr9kgk89wl5rvv34jrvir043fs9xvim5zq99";
   };
 
-  buildInputs = [ pkgconfig libtoxcore dbus libvpx libX11 openal freetype
-                  libv4l libXrender fontconfig libXext libXft filteraudio ];
+  buildInputs = [
+    libtoxcore dbus libvpx libX11 openal freetype
+    libv4l libXrender fontconfig libXext libXft filter-audio
+    libsodium
+  ];
+
+  nativeBuildInputs = [
+    cmake git pkgconfig
+  ];
+
+  cmakeFlags = [
+    "-DENABLE_UPDATER=OFF"
+  ];
 
   doCheck = false;
-  
-  makeFlags = "PREFIX=$(out)";
 
   meta = with stdenv.lib; {
     description = "Lightweight Tox client";
+    homepage = https://github.com/uTox/uTox;
     license = licenses.gpl3;
-    maintainers = with maintainers; [ iElectric jgeerds ];
+    maintainers = with maintainers; [ domenkozar jgeerds ];
     platforms = platforms.all;
   };
 }

@@ -1,5 +1,7 @@
 { stdenv
 , fetchurl
+, gcc
+, removeReferencesTo
 , cpp ? false
 , gfortran ? null
 , zlib ? null
@@ -12,14 +14,17 @@
 # (--enable-unsupported could be used to force the build)
 assert !cpp || mpi == null;
 
-with { inherit (stdenv.lib) optional optionals; };
+# No point splitting version 1.8.18 into multiple outputs.
+# The library /lib/libhdf5.so has a reference to gcc-wrapper
+
+let inherit (stdenv.lib) optional optionals; in
 
 stdenv.mkDerivation rec {
-  version = "1.8.16";
+  version = "1.8.18";
   name = "hdf5-${version}";
   src = fetchurl {
-    url = "http://www.hdfgroup.org/ftp/HDF5/releases/${name}/src/${name}.tar.bz2";
-    sha256 = "1ilq8pn9lxbf2wj2rdzwqabxismznjj1d23iw6g78w0bl5dsxahk";
+    url = "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/${name}/src/${name}.tar.bz2";
+    sha256 = "13542vrnl1p35n8vbq0wzk40vddmm33q5nh04j98c7r1yjnxxih1";
  };
 
   passthru = {
@@ -27,12 +32,14 @@ stdenv.mkDerivation rec {
     inherit mpi;
   };
 
+  nativeBuildInputs = [ removeReferencesTo ];
+
   buildInputs = []
     ++ optional (gfortran != null) gfortran
-    ++ optional (zlib != null) zlib
     ++ optional (szip != null) szip;
 
   propagatedBuildInputs = []
+    ++ optional (zlib != null) zlib
     ++ optional (mpi != null) mpi;
 
   configureFlags = []
@@ -44,6 +51,10 @@ stdenv.mkDerivation rec {
 
   patches = [./bin-mv.patch];
 
+  postInstall = ''
+    find "$out" -type f -exec remove-references-to -t ${stdenv.cc} '{}' +
+  '';
+
   meta = {
     description = "Data model, library, and file format for storing and managing data";
     longDescription = ''
@@ -52,6 +63,9 @@ stdenv.mkDerivation rec {
       applications to evolve in their use of HDF5. The HDF5 Technology suite includes tools and 
       applications for managing, manipulating, viewing, and analyzing data in the HDF5 format.
     '';
-    homepage = http://www.hdfgroup.org/HDF5/;
+    license = stdenv.lib.licenses.free; # BSD-like
+    homepage = https://www.hdfgroup.org/HDF5/;
+    platforms = stdenv.lib.platforms.unix;
+    broken = (gfortran != null) && stdenv.isDarwin;
   };
 }

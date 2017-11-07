@@ -2,13 +2,13 @@
 
 stdenv.mkDerivation rec {
   name = "arachne-pnr-${version}";
-  version = "2015.12.29";
+  version = "2017.06.29";
 
   src = fetchFromGitHub {
     owner = "cseed";
     repo = "arachne-pnr";
-    rev = "1a4fdf96a7fd08806c032d41a2443c8e17c72c80";
-    sha256 = "1dj7ycffwkmlsh12117fbybkdfnlhxbbxkbfgwfyvcgmg3cacgl1";
+    rev = "7e135edb31feacde85ec5b7e5c03fc9157080977";
+    sha256 = "1wszcx6hgw4q4r778zswrlwdwvwxq834bkajck8w9yfqwxs9lmq8";
   };
 
   preBuild = ''
@@ -29,7 +29,8 @@ stdenv.mkDerivation rec {
       the IceStorm [2] icepack command.
     '';
     homepage = https://github.com/cseed/arachne-pnr;
-    license = stdenv.lib.licenses.gpl2;
+    license = stdenv.lib.licenses.mit;
     maintainers = [ stdenv.lib.maintainers.shell ];
+    platforms = stdenv.lib.platforms.linux;
   };
 }

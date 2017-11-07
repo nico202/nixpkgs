@@ -1,25 +1,27 @@
-{ stdenv, fetchurl, python3Packages }:
+{ stdenv, fetchFromGitHub, python3Packages }:
 
-python3Packages.buildPythonPackage rec {
-  name = "urlwatch-1.18";
+python3Packages.buildPythonApplication rec {
+  name = "urlwatch-${version}";
+  version = "2.5";
 
-  src = fetchurl {
-    url = "http://thp.io/2008/urlwatch/${name}.tar.gz";
-    sha256 = "090qfgx249ks7103sap6w47f8302ix2k46wxhfssxwsqcqdl25vb";
+  src = fetchFromGitHub {
+    owner  = "thp";
+    repo   = "urlwatch";
+    rev    = version;
+    sha256 = "0irz54nvyq3cxa3fvjc5k2836a5nmly4wiiy4s5cwib1rnwg6r94";
   };
 
-  patchPhase = ''
-    ./convert-to-python3.sh
-  '';
+  propagatedBuildInputs = with python3Packages; [
+    keyring
+    minidb
+    pyyaml
+    requests
+  ];
 
-  postFixup = ''
-    wrapProgram "$out/bin/urlwatch" --prefix "PYTHONPATH" : "$PYTHONPATH"
-  '';
-
-  meta = {
+  meta = with stdenv.lib; {
     description = "A tool for monitoring webpages for updates";
     homepage = https://thp.io/2008/urlwatch/;
-    license = stdenv.lib.licenses.bsd3;
-    maintainers = [ stdenv.lib.maintainers.tv ];
+    license = licenses.bsd3;
+    maintainers = with maintainers; [ tv ];
   };
 }

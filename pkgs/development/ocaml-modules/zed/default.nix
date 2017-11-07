@@ -1,4 +1,4 @@
-{ stdenv, fetchzip, ocaml, findlib, camomile, ocaml_react }:
+{ stdenv, fetchzip, ocaml, findlib, ocamlbuild, camomile, react }:
 
 stdenv.mkDerivation rec {
   version = "1.4";
@@ -9,7 +9,7 @@ stdenv.mkDerivation rec {
     sha256 = "0d8qfy0qiydrrqi8qc9rcwgjigql6vx9gl4zp62jfz1lmjgb2a3w";
   };
 
-  buildInputs = [ ocaml findlib ocaml_react ];
+  buildInputs = [ ocaml findlib ocamlbuild react ];
 
   propagatedBuildInputs = [ camomile ];
 
@@ -26,7 +26,7 @@ stdenv.mkDerivation rec {
     '';
     homepage = https://github.com/diml/zed;
     license = stdenv.lib.licenses.bsd3;
-    platforms = ocaml.meta.platforms;
+    platforms = ocaml.meta.platforms or [];
     maintainers = [
       stdenv.lib.maintainers.gal_bolle
     ];

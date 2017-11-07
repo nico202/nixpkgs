@@ -11,6 +11,8 @@ stdenv.mkDerivation rec {
     sha256 = "1nkid1n2l3rrlmq5qrf5yy06grrkwjh3yxl5g0w58w0pih8allci";
   };
 
+  outputs = [ "out" "dev" ];
+
   buildInputs = [ perl bison flex pkgconfig ];
   propagatedBuildInputs = [ glib libxml2 ] ++ libintlOrEmpty;
 
@@ -37,7 +39,7 @@ stdenv.mkDerivation rec {
   setupHook = ./setup-hook.sh;
 
   meta = {
-    homepage = http://gstreamer.freedesktop.org;
+    homepage = https://gstreamer.freedesktop.org;
 
     description = "Library for constructing graphs of media-handling components";
 
@@ -54,5 +56,6 @@ stdenv.mkDerivation rec {
     '';
 
     license = stdenv.lib.licenses.lgpl2Plus;
+    platforms = stdenv.lib.platforms.unix;
   };
 }

@@ -1,20 +1,28 @@
-{ stdenv, fetchurl, pythonPackages, python} :
+{ stdenv, pythonPackages, glibcLocales} :
 
-pythonPackages.buildPythonPackage rec {
-  name = "devpi-client-${version}";
-  version = "2.3.2";
+pythonPackages.buildPythonApplication rec {
+  name = "${pname}-${version}";
+  pname = "devpi-client";
+  version = "3.1.0rc1";
 
-  src = fetchurl {
-    url = "https://pypi.python.org/packages/source/d/devpi-client/devpi-client-${version}.tar.gz";
-    md5= "bfc8cd768f983fd0585c347bca00c8bb";
+  src = pythonPackages.fetchPypi {
+    inherit pname version;
+    sha256 = "0kfyva886k9zxmilqb2yviwqzyvs3n36if3s56y4clbvw9hr2lc3";
   };
+  # requires devpi-server which is currently not packaged
+  doCheck = true;
+  checkInputs = with pythonPackages; [ pytest webtest mock ];
+  checkPhase = "py.test";
 
-  buildInputs = [ pythonPackages.tox pythonPackages.check-manifest pythonPackages.devpi-common pythonPackages.pkginfo ];
+  LC_ALL = "en_US.UTF-8";
+  buildInputs = with pythonPackages; [ glibcLocales pkginfo tox check-manifest ];
+  propagatedBuildInputs = with pythonPackages; [ py devpi-common pluggy ];
+
   meta = {
     homepage = http://doc.devpi.net;
     description = "Github-style pypi index server and packaging meta tool";
     license = stdenv.lib.licenses.mit;
-    maintainers = [stdenv.lib.maintainers.lewo];
+    maintainers = with stdenv.lib.maintainers; [ lewo makefu ];
 
   };
 }

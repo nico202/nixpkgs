@@ -21,11 +21,11 @@ let
   withX = libX11 != null && !aquaterm && !stdenv.isDarwin;
 in
 stdenv.mkDerivation rec {
-  name = "gnuplot-5.0.0";
+  name = "gnuplot-5.2.0";
 
   src = fetchurl {
     url = "mirror://sourceforge/gnuplot/${name}.tar.gz";
-    sha256 = "1bqg6zbsin9w9m53rbf6adzv0j2gs66z2p5pkd060jlipk2lnza1";
+    sha256 = "0hqyajcnlk822fk7hyl07sqk6a75n93awbdl3ydk9fd6l4jn9zkx";
   };
 
   buildInputs =
@@ -33,7 +33,7 @@ stdenv.mkDerivation rec {
     ++ lib.optional withTeXLive (texlive.combine { inherit (texlive) scheme-small; })
     ++ lib.optional withLua lua
     ++ lib.optionals withX [ libX11 libXpm libXt libXaw ]
-    ++ lib.optional withQt [ qt ]
+    ++ lib.optional withQt qt
     # compiling with wxGTK causes a malloc (double free) error on darwin
     ++ lib.optional (withWxGTK && !stdenv.isDarwin) wxGTK;
 
@@ -46,14 +46,14 @@ stdenv.mkDerivation rec {
     wrapProgram $out/bin/gnuplot \
        --prefix PATH : '${gnused}/bin' \
        --prefix PATH : '${coreutils}/bin' \
-       --prefix PATH : '${fontconfig}/bin' \
+       --prefix PATH : '${fontconfig.bin}/bin' \
        --run '. ${./set-gdfontpath-from-fontconfig.sh}'
   '';
 
   meta = with lib; {
     homepage = http://www.gnuplot.info/;
     description = "A portable command-line driven graphing utility for many platforms";
-    hydraPlatforms = platforms.linux ++ platforms.darwin;
+    platforms = platforms.linux ++ platforms.darwin;
     maintainers = with maintainers; [ lovek323 ];
   };
 }

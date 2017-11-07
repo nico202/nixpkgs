@@ -14,6 +14,10 @@ stdenv.mkDerivation  rec {
     xorg.xproto
   ];
 
+  patchPhase = "sed -i '41,43d' libbristolaudio/audioEngineJack.c"; # disable alsa/iatomic
+
+  configurePhase = "./configure --prefix=$out --enable-jack-default-audio --enable-jack-default-midi";
+
   preInstall = ''
     sed -e "s@\`which bristol\`@$out/bin/bristol@g" -i bin/startBristol
     sed -e "s@\`which brighton\`@$out/bin/brighton@g" -i bin/startBristol
@@ -23,7 +27,7 @@ stdenv.mkDerivation  rec {
     description = "A range of synthesiser, electric piano and organ emulations";
     homepage = http://bristol.sourceforge.net;
     license = licenses.gpl3;
-    platforms = platforms.linux;
+    platforms = ["x86_64-linux" "i686-linux"];
     maintainers = [ maintainers.goibhniu ];
   };
 }

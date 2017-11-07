@@ -1,16 +1,26 @@
-{ stdenv, fetchurl, m4, cxx ? true, withStatic ? true }:
+{ stdenv, fetchurl, m4, cxx ? true
+, buildPackages
+, buildPlatform, hostPlatform
+, withStatic ? false }:
 
-with { inherit (stdenv.lib) optional optionalString; };
+let inherit (stdenv.lib) optional optionalString; in
 
-stdenv.mkDerivation rec {
-  name = "gmp-6.1.0";
+let self = stdenv.mkDerivation rec {
+  name = "gmp-6.1.2";
 
   src = fetchurl { # we need to use bz2, others aren't in bootstrapping stdenv
     urls = [ "mirror://gnu/gmp/${name}.tar.bz2" "ftp://ftp.gmplib.org/pub/${name}/${name}.tar.bz2" ];
-    sha256 = "1s3kddydvngqrpc6i1vbz39raya2jdcl042wi0ksbszgjjllk129";
+    sha256 = "1clg7pbpk6qwxj5b2mw0pghzawp2qlm3jf9gdd8i6fl6yh2bnxaj";
   };
 
-  nativeBuildInputs = [ m4 ];
+  #outputs TODO: split $cxx due to libstdc++ dependency
+  # maybe let ghc use a version with *.so shared with rest of nixpkgs and *.a added
+  # - see #5855 for related discussion
+  outputs = [ "out" "dev" "info" ];
+  passthru.static = self.out;
+
+  nativeBuildInputs = [ m4 ]
+    ++ stdenv.lib.optional (buildPlatform != hostPlatform) buildPackages.stdenv.cc;
 
   configureFlags =
     # Build a "fat binary", with routines for several sub-architectures
@@ -33,14 +43,14 @@ stdenv.mkDerivation rec {
       configureFlagsArray+=("--build=$(./configfsf.guess)")
     '';
 
-  doCheck = true;
+  doCheck = buildPlatform == hostPlatform;
 
   dontDisableStatic = withStatic;
 
   enableParallelBuilding = true;
 
   meta = with stdenv.lib; {
-    homepage = "http://gmplib.org/";
+    homepage = https://gmplib.org/;
     description = "GNU multiple precision arithmetic library";
     license = licenses.gpl3Plus;
 
@@ -67,6 +77,7 @@ stdenv.mkDerivation rec {
       '';
 
     platforms = platforms.all;
-    maintainers = [ maintainers.simons ];
+    maintainers = [ maintainers.peti maintainers.vrthra ];
   };
-}
+};
+  in self

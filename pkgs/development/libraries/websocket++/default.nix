@@ -14,8 +14,9 @@ stdenv.mkDerivation rec {
   buildInputs = [ cmake ];
 
   meta = {
-    homepage = "http://www.zaphoyd.com/websocketpp/";
+    homepage = http://www.zaphoyd.com/websocketpp/;
     description = "C++/Boost Asio based websocket client/server library";
     license = stdenv.lib.licenses.bsd3;
+    platforms = stdenv.lib.platforms.unix;
   };
 }

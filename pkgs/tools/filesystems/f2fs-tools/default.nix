@@ -1,19 +1,20 @@
-{ stdenv, fetchurl, autoreconfHook, libuuid, pkgconfig }:
+{ stdenv, fetchgit, autoreconfHook, libselinux, libuuid, pkgconfig }:
 
 stdenv.mkDerivation rec {
   name = "f2fs-tools-${version}";
-  version = "1.5.0";
+  version = "1.8.0";
 
-  src = fetchurl {
-    url = "http://git.kernel.org/cgit/linux/kernel/git/jaegeuk/f2fs-tools.git/snapshot/${name}.tar.gz";
-    sha256 = "1pdgl78xkagxlmavy6x118wjzz8yvl8n08fc1m6wah9bf93qlhdf";
+  src = fetchgit {
+    url = "git://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git";
+    rev = "refs/tags/v${version}";
+    sha256 = "0mbpg6mng6jcm5vxq0ivhklgpkwvjbhjwgkhzxr50ln46h5kbd2f";
   };
 
-  nativeBuildInputs = [ autoreconfHook ];
-  buildInputs = [ libuuid pkgconfig ];
+  nativeBuildInputs = [ autoreconfHook pkgconfig ];
+  buildInputs = [ libselinux libuuid ];
 
   meta = with stdenv.lib; {
-    homepage = "http://git.kernel.org/cgit/linux/kernel/git/jaegeuk/f2fs-tools.git/";
+    homepage = http://git.kernel.org/cgit/linux/kernel/git/jaegeuk/f2fs-tools.git/;
     description = "Userland tools for the f2fs filesystem";
     license = licenses.gpl2;
     platforms = platforms.linux;

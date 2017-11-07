@@ -1,18 +1,20 @@
 { fetchurl, stdenv, pkgconfig, ncurses, boehmgc, perl, help2man }:
 
 stdenv.mkDerivation rec {
-  name = "zile-2.4.11";
+  name = "zile-2.4.13";
 
   src = fetchurl {
     url = "mirror://gnu/zile/${name}.tar.gz";
-    sha256 = "1k593y1xzvlj52q0gyhcx2lllws4sg84b8r9pcginjb1vjypplhz";
+    sha256 = "03mcg0bxkzprlsx8y6h22w924pzx4a9zr7zm3g11j8j3x9lz75f7";
   };
 
   buildInputs = [ pkgconfig ncurses boehmgc ];
-  nativeBuildInputs = [ help2man perl ];
-
-  # `help2man' wants to run Zile, which fails when cross-compiling.
-  crossAttrs.nativeBuildInputs = [];
+  nativeBuildInputs = [ perl ]
+    # `help2man' wants to run Zile, which won't work when the
+    # newly-produced binary can't be run at build-time.
+    ++ stdenv.lib.optional
+         (stdenv.hostPlatform == stdenv.buildPlatform)
+         help2man;
 
   # Tests can't be run because most of them rely on the ability to
   # fiddle with the terminal.

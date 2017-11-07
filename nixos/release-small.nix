@@ -31,7 +31,8 @@ in rec {
     inherit (nixos') channel manual iso_minimal dummy;
     tests = {
       inherit (nixos'.tests)
-        containers
+        containers-imperative
+        containers-ipv4
         firewall
         ipv6
         login
@@ -52,8 +53,7 @@ in rec {
 
   nixpkgs = {
     inherit (nixpkgs')
-      apacheHttpd_2_2
-      apacheHttpd_2_4
+      apacheHttpd
       cmake
       cryptsetup
       emacs
@@ -62,14 +62,12 @@ in rec {
       imagemagick
       jdk
       linux
-      mysql51
-      mysql55
+      mysql
       nginx
       nodejs
       openssh
       php
-      postgresql92
-      postgresql93
+      postgresql
       python
       rsyslog
       stdenv

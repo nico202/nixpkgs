@@ -1,18 +1,25 @@
-{ stdenv, fetchurl }:
+{ stdenv, fetchFromGitHub, autoreconfHook }:
 
 stdenv.mkDerivation rec {
   name = "snapraid-${version}";
-  version = "8.1";
+  version = "11.1";
 
-  src = fetchurl {
-    url = "https://github.com/amadvance/snapraid/releases/download/v${version}/snapraid-${version}.tar.gz";
-    sha256 = "0pafqn9ismn4j3fsx8fgf008qwh2c6f8mjfjijah6d5c349rmy3b";
+  src = fetchFromGitHub {
+    owner = "amadvance";
+    repo = "snapraid";
+    rev = "v${version}";
+    sha256 = "13v0gz22ng09gs87f7900z2sk2hg5543njl32rfn4cxxp0jncs3r";
   };
+
+  doCheck = true;
+
+  buildInputs = [ autoreconfHook ];
 
   meta = {
     homepage = http://www.snapraid.it/;
     description = "A backup program for disk arrays";
     license = stdenv.lib.licenses.gpl3;
     maintainers = [ stdenv.lib.maintainers.makefu ];
+    platforms = stdenv.lib.platforms.unix;
   };
 }

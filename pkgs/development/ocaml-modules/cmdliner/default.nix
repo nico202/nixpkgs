@@ -1,40 +1,42 @@
-{stdenv, fetchurl, ocaml, findlib, opam}:
+{ stdenv, fetchurl, ocaml, findlib, ocamlbuild, opam, topkg, result }:
 
 let
   pname = "cmdliner";
-  version = "0.9.8";
-  ocaml_version = (builtins.parseDrvName ocaml.name).version;
 in
 
-assert stdenv.lib.versionAtLeast ocaml_version "3.12";
+assert stdenv.lib.versionAtLeast ocaml.version "4.01.0";
 
-stdenv.mkDerivation {
-
+stdenv.mkDerivation rec {
   name = "ocaml-${pname}-${version}";
+  version = "1.0.2";
 
   src = fetchurl {
     url = "http://erratique.ch/software/${pname}/releases/${pname}-${version}.tbz";
-    sha256 = "0hdxlkgiwjml9dpaa80282a8350if7mc1m6yz2mrd7gci3fszykx";
+    sha256 = "18jqphjiifljlh9jg8zpl6310p3iwyaqphdkmf89acyaix0s4kj1";
   };
 
   unpackCmd = "tar xjf $src";
-  buildInputs = [ ocaml findlib opam ];
+
+  nativeBuildInputs = [ ocamlbuild opam topkg ];
+  buildInputs = [ ocaml findlib ];
+  propagatedBuildInputs = [ result ];
 
   createFindlibDestdir = true;
 
-  configurePhase = "ocaml pkg/git.ml";
-  buildPhase     = "ocaml pkg/build.ml native=true native-dynlink=true";
-  installPhase   = ''
-    opam-installer --script --prefix=$out ${pname}.install > install.sh
-    sh install.sh
-    ln -s $out/lib/${pname} $out/lib/ocaml/${ocaml_version}/site-lib/
+  buildPhase = ''
+    ocaml -I ${findlib}/lib/ocaml/${ocaml.version}/site-lib pkg/pkg.ml build
+  '';
+
+  installPhase = ''
+    opam-installer --script --prefix=$out | sh
+    ln -s $out/lib/${pname} $out/lib/ocaml/${ocaml.version}/site-lib/
   '';
 
   meta = with stdenv.lib; {
     homepage = http://erratique.ch/software/cmdliner;
     description = "An OCaml module for the declarative definition of command line interfaces";
     license = licenses.bsd3;
+    platforms = ocaml.meta.platforms or [];
     maintainers = [ maintainers.vbgl ];
-    platforms = ocaml.meta.platforms;
   };
 }

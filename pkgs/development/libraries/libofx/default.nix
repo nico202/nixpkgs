@@ -15,8 +15,8 @@ stdenv.mkDerivation rec {
     description = "Opensource implementation of the Open Financial eXchange specification";
     homepage = http://libofx.sourceforge.net/;
     license = "LGPL";
-    platforms = stdenv.lib.platforms.all;
-    maintainers = [ stdenv.lib.maintainers.urkud ];
+    platforms = stdenv.lib.platforms.linux;
+    maintainers = [ ];
   };
 }
 

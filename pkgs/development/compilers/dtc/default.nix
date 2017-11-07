@@ -2,12 +2,12 @@
 
 stdenv.mkDerivation rec {
   name = "dtc-${version}";
-  version = "1.4.1";
+  version = "1.4.4";
 
   src = fetchgit {
     url = "git://git.kernel.org/pub/scm/utils/dtc/dtc.git";
     rev = "refs/tags/v${version}";
-    sha256 = "0z7yrv0sdhsh5wwy7yd1fvs4pqaq0n9m5i8w65lyibg77ahkasdg";
+    sha256 = "1pxp7700b3za7q4fnsnxx6i8v66rnr8p6lyi7jf684y1hq5ynlnf";
   };
 
   nativeBuildInputs = [ flex bison ];
@@ -19,6 +19,6 @@ stdenv.mkDerivation rec {
     homepage = https://git.kernel.org/cgit/utils/dtc/dtc.git;
     license = licenses.gpl2; # dtc itself is GPLv2, libfdt is dual GPL/BSD
     maintainers = [ maintainers.dezgeg ];
-    platforms = platforms.linux;
+    platforms = platforms.unix;
   };
 }

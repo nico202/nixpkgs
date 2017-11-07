@@ -12,6 +12,8 @@ stdenv.mkDerivation {
 
   buildInputs = [ lame libvorbis libmad pkgconfig libao ];
 
+  hardeningDisable = [ "format" ];
+
   # Adjust some headers to match glibc 2.12 ... patch is a diff between
   # the cdrdao CVS head and the 1.2.3 release.
   patches = [ ./adjust-includes-for-glibc-212.patch ];
@@ -22,8 +24,12 @@ stdenv.mkDerivation {
     sed -i 's,linux/../,,g' dao/sg_err.h
   '';
 
+  # Needed on gcc >= 6.
+  NIX_CFLAGS_COMPILE = "-Wno-narrowing";
+
   meta = {
     description = "A tool for recording audio or data CD-Rs in disk-at-once (DAO) mode";
     homepage = http://cdrdao.sourceforge.net/;
+    platforms = stdenv.lib.platforms.linux;
   };
 }

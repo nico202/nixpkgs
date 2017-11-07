@@ -34,7 +34,7 @@ stdenv.mkDerivation {
   '';
 
   meta = {
-    homepage = "http://code.google.com/p/pdsh/";
+    homepage = http://code.google.com/p/pdsh/;
     description = "High-performance, parallel remote shell utility";
     license = stdenv.lib.licenses.gpl2;
 
@@ -47,7 +47,7 @@ stdenv.mkDerivation {
       while timeouts occur on some connections.
     '';
 
-    hydraPlatforms = stdenv.lib.platforms.linux;
-    maintainers = [ stdenv.lib.maintainers.simons ];
+    platforms = stdenv.lib.platforms.linux;
+    maintainers = [ stdenv.lib.maintainers.peti ];
   };
 }

@@ -4,19 +4,20 @@
 , SDL, SDL_net, zlib
 }:
 
+with stdenv.lib;
 stdenv.mkDerivation rec {
 
   name = "mednafen-${version}";
-  version = "0.9.38.6";
+  version = "0.9.47";
 
   src = fetchurl {
-    url = "http://mednafen.fobby.net/releases/files/${name}.tar.bz2";
-    sha256 = "0ivy0vqy1cjd5namn4bdm9ambay6rdccjl9x5418mjyqdhydlq4l";
+    url = "https://mednafen.github.io/releases/files/${name}.tar.xz";
+    sha256 = "0flz6bjkzs9qrw923s4cpqrz4b2dhc2w7pd8mgw0l1xbmrh7w4si";
   };
 
-  buildInputs = with stdenv.lib;
-  [ pkgconfig libX11 mesa freeglut libjack2 libcdio libsndfile libsamplerate SDL SDL_net zlib ];
-  
+  buildInputs =
+  [ pkgconfig libX11 mesa freeglut libjack2 libcdio
+    libsndfile libsamplerate SDL SDL_net zlib ];
 
   # Install docs
   postInstall = ''
@@ -27,7 +28,7 @@ stdenv.mkDerivation rec {
 
   meta = with stdenv.lib; {
     description = "A portable, CLI-driven, SDL+OpenGL-based, multi-system emulator";
-    homepage = http://mednafen.sourceforge.net/;
+    homepage = http://mednafen.github.io/;
     license = licenses.gpl2;
     maintainers = [ maintainers.AndersonTorres ];
     platforms = platforms.linux;

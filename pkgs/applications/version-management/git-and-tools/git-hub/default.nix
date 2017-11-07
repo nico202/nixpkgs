@@ -1,18 +1,18 @@
-{ stdenv, fetchFromGitHub, docutils, python }:
+{ stdenv, fetchFromGitHub, docutils, python2Packages }:
 
-let version = "0.9.0"; in
 stdenv.mkDerivation rec {
   name = "git-hub-${version}";
+  version = "0.11.1";
 
   src = fetchFromGitHub {
-    sha256 = "0c4kq4a906lr8nzway7qh0560n2ydvidh9rlffh44902rd48kp0h";
+    sha256 = "15449bqk7nyvbpin5j2hg862cqa7hb4zxkmr8mkqm5hz2jxmxspa";
     rev = "v${version}";
     repo = "git-hub";
-    owner = "sociomantic";
+    owner = "sociomantic-tsunami";
   };
 
-  buildInputs = [ python ];
-  nativeBuildInputs = [ docutils ];
+  buildInputs = [ python2Packages.python ];
+  nativeBuildInputs = [ python2Packages.docutils ];
 
   postPatch = ''
     substituteInPlace Makefile --replace rst2man rst2man.py
@@ -29,7 +29,6 @@ stdenv.mkDerivation rec {
   '';
 
   meta = with stdenv.lib; {
-    inherit version;
     inherit (src.meta) homepage;
     description = "Git command line interface to GitHub";
     longDescription = ''

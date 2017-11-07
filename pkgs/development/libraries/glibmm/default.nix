@@ -1,7 +1,7 @@
-{ stdenv, fetchurl, pkgconfig, glib, libsigcxx }:
+{ stdenv, fetchurl, pkgconfig, gnum4, glib, libsigcxx }:
 
 let
-  ver_maj = "2.44";
+  ver_maj = "2.50";
   ver_min = "0";
 in
 stdenv.mkDerivation rec {
@@ -9,22 +9,25 @@ stdenv.mkDerivation rec {
 
   src = fetchurl {
     url = "mirror://gnome/sources/glibmm/${ver_maj}/${name}.tar.xz";
-    sha256 = "1a1fczy7hcpn24fglyn4i79f4yjc8s50is70q03mb294bm1c02hv";
+    sha256 = "df726e3c6ef42b7621474b03b644a2e40ec4eef94a1c5a932c1e740a78f95e94";
   };
 
-  nativeBuildInputs = [ pkgconfig ];
+  outputs = [ "out" "dev" ];
+
+  nativeBuildInputs = [ pkgconfig gnum4 ];
   propagatedBuildInputs = [ glib libsigcxx ];
 
+  enableParallelBuilding = true;
   #doCheck = true; # some tests need network
 
-  meta = {
+  meta = with stdenv.lib; {
     description = "C++ interface to the GLib library";
 
-    homepage = http://gtkmm.org/;
+    homepage = https://gtkmm.org/;
 
-    license = stdenv.lib.licenses.lgpl2Plus;
+    license = licenses.lgpl2Plus;
 
-    maintainers = with stdenv.lib.maintainers; [urkud raskin];
-    platforms = stdenv.lib.platforms.unix;
+    maintainers = with maintainers; [raskin];
+    platforms = platforms.unix;
   };
 }

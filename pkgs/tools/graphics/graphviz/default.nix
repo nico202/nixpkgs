@@ -1,48 +1,40 @@
-{ stdenv, fetchurl, pkgconfig, libpng, libjpeg, expat, libXaw
+{ stdenv, fetchurl, pkgconfig, libpng, libjpeg, expat
 , yacc, libtool, fontconfig, pango, gd, xorg, gts, libdevil, gettext, cairo
 , flex
+, ApplicationServices
 }:
 
 stdenv.mkDerivation rec {
-  version = "2.38.0";
+  version = "2.40.1";
   name = "graphviz-${version}";
 
   src = fetchurl {
     url = "http://www.graphviz.org/pub/graphviz/ARCHIVE/${name}.tar.gz";
-    sha256 = "17l5czpvv5ilmg17frg0w4qwf89jzh2aglm9fgx0l0aakn6j7al1";
+    sha256 = "08d4ygkxz2f553bxj6087da56a23kx1khv0j8ycxa102vvx1hlna";
   };
 
-  patches =
-    [ ./0001-vimdot-lookup-vim-in-PATH.patch
-    
-      # NOTE: Once this patch is removed, flex can probably be removed from
-      # buildInputs.
-      ./cve-2014-9157.patch
-    ];
+  hardeningDisable = [ "fortify" ];
+
+  patches = [ ];
 
   buildInputs =
-    [ pkgconfig libpng libjpeg expat yacc libtool fontconfig gd gts libdevil flex
-    ] ++ stdenv.lib.optionals (xorg != null) [ xorg.xlibsWrapper xorg.libXrender pango libXaw ]
-    ++ stdenv.lib.optional (stdenv.system == "x86_64-darwin") gettext;
+    [ pkgconfig libpng libjpeg expat yacc libtool fontconfig gd gts libdevil flex pango
+    ] ++ stdenv.lib.optionals (xorg != null)
+      (with xorg; [ xlibsWrapper libXrender libXaw libXpm ])
+    ++ stdenv.lib.optionals (stdenv.isDarwin) [ ApplicationServices gettext ];
 
-  CPPFLAGS = stdenv.lib.optionalString (xorg != null && stdenv.system == "x86_64-darwin")
-    "-I${cairo}/include/cairo";
+  CPPFLAGS = stdenv.lib.optionalString (xorg != null && stdenv.isDarwin)
+    "-I${cairo.dev}/include/cairo";
 
-  configureFlags =
-    [ "--with-pngincludedir=${libpng}/include"
-      "--with-pnglibdir=${libpng}/lib"
-      "--with-jpegincludedir=${libjpeg}/include"
-      "--with-jpeglibdir=${libjpeg}/lib"
-      "--with-expatincludedir=${expat}/include"
-      "--with-expatlibdir=${expat}/lib"
-    ]
-    ++ stdenv.lib.optional (xorg == null) "--without-x";
+  configureFlags = stdenv.lib.optional (xorg == null) "--without-x";
 
-  postPatch = stdenv.lib.optionalString stdenv.isDarwin ''
+  postPatch = (stdenv.lib.optionalString stdenv.isDarwin ''
     for foo in cmd/dot/Makefile.in cmd/edgepaint/Makefile.in \
                     cmd/mingle/Makefile.in plugin/gdiplus/Makefile.in; do
       substituteInPlace "$foo" --replace "-lstdc++" "-lc++"
     done
+  '') + ''
+      substituteInPlace "plugin/xlib/vimdot.sh" --replace "/usr/bin/vim" "\$(command -v vim)"
   '';
 
   preBuild = ''
@@ -56,7 +48,7 @@ stdenv.mkDerivation rec {
   '';
 
   meta = {
-    homepage = "http://www.graphviz.org/";
+    homepage = http://www.graphviz.org/;
     description = "Open source graph visualization software";
 
     longDescription = ''
@@ -68,8 +60,8 @@ stdenv.mkDerivation rec {
       interfaces for other technical domains.
     '';
 
-    hydraPlatforms = stdenv.lib.platforms.linux ++ stdenv.lib.platforms.darwin;
-    maintainers = with stdenv.lib.maintainers; [ simons bjornfor raskin ];
+    platforms = stdenv.lib.platforms.linux ++ stdenv.lib.platforms.darwin;
+    maintainers = with stdenv.lib.maintainers; [ bjornfor raskin ];
     downloadPage = "http://www.graphviz.org/pub/graphviz/ARCHIVE/";
     inherit version;
     updateWalker = true;

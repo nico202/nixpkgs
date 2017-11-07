@@ -1,20 +1,21 @@
-{ stdenv, fetchgit, lib, python, which }:
+{ stdenv, fetchFromGitHub, lib, python, which }:
 let
-  version = "0.5.1";
-  src = fetchgit {
-    url = "https://github.com/gfxmonk/gup.git";
-    rev = "f185052e2177ed5e46720e6c6cfb529b96cd17e2";
-    sha256 = "c2e27cdba2231017ceb4868f58f5c3b224be0491b81558b4e59bb08a952ad1a5";
+  version = "0.6.0";
+  src = fetchFromGitHub {
+    sha256 = "053xnx39jh9kn9l572z4k0q7bbxjpisf1fm9aq27ybj2ha1rh6wr";
+    rev = "version-${version}";
+    repo = "gup";
+    owner = "timbertson";
   };
 in
 import ./build.nix
   { inherit stdenv lib python which; }
   { inherit src version;
     meta = {
+      inherit (src.meta) homepage;
       description = "A better make, inspired by djb's redo";
-      homepage = https://github.com/gfxmonk/gup;
       license = stdenv.lib.licenses.lgpl2Plus;
-      maintainers = [ stdenv.lib.maintainers.gfxmonk ];
+      maintainers = [ stdenv.lib.maintainers.timbertson ];
       platforms = stdenv.lib.platforms.all;
     };
   }

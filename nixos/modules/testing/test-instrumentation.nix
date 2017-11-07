@@ -9,6 +9,15 @@ let kernel = config.boot.kernelPackages.kernel; in
 
 {
 
+  # This option is a dummy that if used in conjunction with
+  # modules/virtualisation/qemu-vm.nix gets merged with the same option defined
+  # there and only is declared here because some modules use
+  # test-instrumentation.nix but not qemu-vm.nix.
+  #
+  # One particular example are the boot tests where we want instrumentation
+  # within the images but not other stuff like setting up 9p filesystems.
+  options.virtualisation.qemu.program = mkOption { type = types.path; };
+
   config = {
 
     systemd.services.backdoor =
@@ -20,7 +29,15 @@ let kernel = config.boot.kernelPackages.kernel; in
             export USER=root
             export HOME=/root
             export DISPLAY=:0.0
+
             source /etc/profile
+
+            # Don't use a pager when executing backdoor
+            # actions. Because we use a tty, commands like systemctl
+            # or nix-store get confused into thinking they're running
+            # interactively.
+            export PAGER=
+
             cd /tmp
             exec < /dev/hvc0 > /dev/hvc0
             while ! exec 2> /dev/ttyS0; do sleep 0.1; done
@@ -37,11 +54,6 @@ let kernel = config.boot.kernelPackages.kernel; in
     # with EIO).  Likewise for hvc0.
     systemd.services."serial-getty@ttyS0".enable = false;
     systemd.services."serial-getty@hvc0".enable = false;
-
-    # Don't use a pager when executing backdoor actions. Because we
-    # use a tty, commands like systemctl or nix-store get confused
-    # into thinking they're running interactively.
-    environment.variables.PAGER = "";
 
     boot.initrd.preDeviceCommands =
       ''
@@ -110,6 +122,7 @@ let kernel = config.boot.kernelPackages.kernel; in
     # Make it easy to log in as root when running the test interactively.
     users.extraUsers.root.initialHashedPassword = mkOverride 150 "";
 
+    services.xserver.displayManager.logToJournal = true;
   };
 
 }

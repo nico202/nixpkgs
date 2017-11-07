@@ -1,4 +1,4 @@
-{ stdenv, fetchurl, ocaml, findlib }:
+{ stdenv, fetchurl, ocaml, findlib, ocamlbuild }:
 
 stdenv.mkDerivation {
 
@@ -9,7 +9,7 @@ stdenv.mkDerivation {
     sha256 = "1j9kflv2i16vf9hy031cl6z8hv6791mjbhnd9bw07y1pswdlx1r6";
   };
 
-  buildInputs = [ ocaml findlib ];
+  buildInputs = [ ocaml findlib ocamlbuild ];
 
   configurePhase = "ocaml setup.ml -configure --prefix $out";
 
@@ -20,7 +20,7 @@ stdenv.mkDerivation {
   createFindlibDestdir = true;
 
   meta = with stdenv.lib; {
-    homepage = "https://forge.ocamlcore.org/projects/ansiterminal";
+    homepage = https://forge.ocamlcore.org/projects/ansiterminal;
     description = "A module allowing to use the colors and cursor movements on ANSI terminals";
     longDescription = ''
       ANSITerminal is a module allowing to use the colors and cursor
@@ -28,7 +28,7 @@ stdenv.mkDerivation {
       this part is currently work in progress).
     '';
     license = licenses.lgpl3;
-    platforms = ocaml.meta.platforms;
+    platforms = ocaml.meta.platforms or [];
     maintainers = [ maintainers.jirkamarsik ];
   };
 }

@@ -1,4 +1,4 @@
-{ stdenv, perl, pkgs, steam-runtime
+{ stdenv, lib, perl, pkgs, steam-runtime
 , nativeOnly ? false
 , runtimeOnly ? false
 }:
@@ -20,6 +20,7 @@ let
     xlibs.libXcursor
     xlibs.libXrender
     xlibs.libXScrnSaver
+    xlibs.libXxf86vm
     xlibs.libXi
     xlibs.libSM
     xlibs.libICE
@@ -41,13 +42,12 @@ let
     libav
     atk
     # Only libraries are needed from those two
-    udev182
+    libudev0-shim
     networkmanager098
 
     # Verified games requirements
     xlibs.libXmu
     xlibs.libxcb
-    xlibs.libpciaccess
     mesa_glu
     libuuid
     libogg
@@ -76,33 +76,36 @@ let
     SDL2_ttf
     SDL2_mixer
     gstreamer
-    gst_plugins_base
+    gst-plugins-base
   ];
 
   overridePkgs = with pkgs; [
-    gcc48.cc # libstdc++
+    libgpgerror
     libpulseaudio
     alsaLib
     openalSoft
+    libva
+    vulkan-loader
+    gcc.cc
   ];
 
   ourRuntime = if runtimeOnly then []
                else if nativeOnly then runtimePkgs ++ overridePkgs
                else overridePkgs;
-  steamRuntime = stdenv.lib.optional (!nativeOnly) steam-runtime;
+  steamRuntime = lib.optional (!nativeOnly) steam-runtime;
+
+  allPkgs = ourRuntime ++ steamRuntime;
 
 in stdenv.mkDerivation rec {
   name = "steam-runtime-wrapped";
-
-  allPkgs = ourRuntime ++ steamRuntime;
 
   nativeBuildInputs = [ perl ];
 
   builder = ./build-wrapped.sh;
 
   installPhase = ''
-    buildDir "${toString steam-runtime.libs}" "$allPkgs"
-    buildDir "${toString steam-runtime.bins}" "$allPkgs"
+    buildDir "${toString steam-runtime.libs}" "${toString (map lib.getLib allPkgs)}"
+    buildDir "${toString steam-runtime.bins}" "${toString (map lib.getBin allPkgs)}"
   '';
 
   meta.hydraPlatforms = [];

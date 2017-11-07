@@ -1,4 +1,4 @@
-{stdenv, fetchurl, qt4, bzip2, lib3ds, levmar, muparser, unzip}:
+{ stdenv, fetchurl, qt4, bzip2, lib3ds, levmar, muparser, unzip, vcg }:
 
 stdenv.mkDerivation rec {
   name = "meshlab-1.3.3";
@@ -14,10 +14,10 @@ stdenv.mkDerivation rec {
 
   patches = [ ./include-unistd.diff ];
 
+  hardeningDisable = [ "format" ];
+
   buildPhase = ''
     mkdir -p "$out/include"
-    cp -r vcglib "$out/include"
-    export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -I$out/include/vcglib"
     export NIX_LDFLAGS="-rpath $out/opt/meshlab $NIX_LDFLAGS"
     cd meshlab/src
     pushd external
@@ -38,7 +38,7 @@ stdenv.mkDerivation rec {
 
   sourceRoot = ".";
 
-  buildInputs = [ qt4 unzip ];
+  buildInputs = [ qt4 unzip vcg ];
 
   meta = {
     description = "System for the processing and editing of unstructured 3D triangular meshes";
@@ -46,6 +46,6 @@ stdenv.mkDerivation rec {
     license = stdenv.lib.licenses.gpl2Plus;
     maintainers = with stdenv.lib.maintainers; [viric];
     platforms = with stdenv.lib.platforms; linux;
-    broken = stdenv.isLinux && stdenv.isi686;
+    broken = true;
   };
 }

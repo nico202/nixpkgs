@@ -1,4 +1,4 @@
-{ stdenv, lib, fetchurl
+{ stdenv, lib, fetchurl, pkgconfig
 , curl, apacheHttpd, pcre, apr, aprutil, libxml2 }:
 
 with lib;
@@ -12,16 +12,17 @@ stdenv.mkDerivation rec {
     sha256 = "e2bbf789966c1f80094d88d9085a81bde082b2054f8e38e0db571ca49208f434";
   };
 
+  nativeBuildInputs = [ pkgconfig ];
   buildInputs = [ curl apacheHttpd pcre apr aprutil libxml2 ];
   configureFlags = [
     "--enable-standalone-module"
     "--enable-static"
-    "--with-curl=${curl}"
-    "--with-apxs=${apacheHttpd}/bin/apxs"
-    "--with-pcre=${pcre}"
-    "--with-apr=${apr}"
-    "--with-apu=${aprutil}/bin/apu-1-config"
-    "--with-libxml=${libxml2}"
+    "--with-curl=${curl.dev}"
+    "--with-apxs=${apacheHttpd.dev}/bin/apxs"
+    "--with-pcre=${pcre.dev}"
+    "--with-apr=${apr.dev}"
+    "--with-apu=${aprutil.dev}/bin/apu-1-config"
+    "--with-libxml=${libxml2.dev}"
   ];
 
   outputs = ["out" "nginx"];

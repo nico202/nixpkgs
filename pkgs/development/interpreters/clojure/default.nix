@@ -1,13 +1,13 @@
 { stdenv, fetchurl, unzip, ant, jdk, makeWrapper }:
 
-let version = "1.7.0"; in
+let version = "1.8.0"; in
 
 stdenv.mkDerivation {
   name = "clojure-${version}";
 
   src = fetchurl {
     url = "http://repo1.maven.org/maven2/org/clojure/clojure/${version}/clojure-${version}.zip";
-    sha256 = "14yg0g6vpzxjwlvs5anq9jfz9zdbd3rsl6qsgxa6qxm19mwh7qsd";
+    sha256 = "1nip095fz5c492sw15skril60i1vd21ibg6szin4jcvyy3xr6cym";
   };
 
   buildInputs = [ unzip ant jdk makeWrapper ];
@@ -20,10 +20,10 @@ stdenv.mkDerivation {
     makeWrapper ${jdk.jre}/bin/java $out/bin/clojure --add-flags "-cp $out/share/java/clojure.jar clojure.main"
   '';
 
-  meta = {
+  meta = with stdenv.lib; {
     description = "A Lisp dialect for the JVM";
-    homepage = http://clojure.org/;
-    license = stdenv.lib.licenses.bsd3;
+    homepage = https://clojure.org/;
+    license = licenses.epl10;
     longDescription = ''
       Clojure is a dynamic programming language that targets the Java
       Virtual Machine. It is designed to be a general-purpose language,
@@ -43,6 +43,7 @@ stdenv.mkDerivation {
       offers a software transactional memory system and reactive Agent
       system that ensure clean, correct, multithreaded designs.
     '';
-    maintainers = with stdenv.lib.maintainers; [ the-kenny ];
+    maintainers = with maintainers; [ the-kenny ];
+    platforms = platforms.unix;
   };
 }

@@ -2,11 +2,11 @@
 
 stdenv.mkDerivation rec {
   name = "git-extras-${version}";
-  version = "3.0.0";
+  version = "4.2.0";
 
   src = fetchurl {
     url = "https://github.com/tj/git-extras/archive/${version}.tar.gz";
-    sha256 = "01x8n9i5sgl1s53sgglg9sd9lyp35dhvdhwlx03yimi4i11441s9";
+    sha256 = "0pr2vf5rajkwjm45zvnwkc13kvk3kyr18axxvmm8drsqdkr8lrjk";
   };
 
   phases = [ "unpackPhase" "installPhase" ];
@@ -18,6 +18,6 @@ stdenv.mkDerivation rec {
     description = "GIT utilities -- repo summary, repl, changelog population, author commit percentages and more";
     license = licenses.mit;
     platforms = platforms.all;
-    maintainers = [ maintainers.spwhitt ];
+    maintainers = [ maintainers.spwhitt maintainers.cko ];
   };
 }

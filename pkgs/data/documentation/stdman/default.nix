@@ -11,13 +11,15 @@ stdenv.mkDerivation rec {
     sha256 = "09c5gjhcz97ghfrv9zkgfb1wckvmqnhbzga0xidbm1ir7640di8l";
   };
 
+  outputDevdoc = "out";
+
   preConfigure = "
     patchShebangs ./configure
     patchShebangs ./do_install
   ";
 
   buildInputs = [ curl ];
-  
+
   meta = with stdenv.lib; {
     description = "Formatted C++11/14 stdlib man pages (cppreference)";
     longDescription = "stdman is a tool that parses archived HTML
@@ -26,7 +28,7 @@ stdenv.mkDerivation rec {
       formatting for easy readability.";
     homepage = https://github.com/jeaye/stdman;
     license = licenses.mit;
-    platforms = platforms.linux;
+    platforms = platforms.unix;
     maintainers = [ maintainers.twey ];
   };
 }

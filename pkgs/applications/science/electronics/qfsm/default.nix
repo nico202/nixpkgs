@@ -10,13 +10,19 @@ stdenv.mkDerivation rec {
 
   buildInputs = [ qt4 cmake graphviz pkgconfig ];
 
-  patches = [ ./drop-hardcoded-prefix.patch ];
+  patches = [
+    ./drop-hardcoded-prefix.patch
+    ./gcc6-fixes.patch
+  ];
+
+  hardeningDisable = [ "format" ];
 
   enableParallelBuilding = true;
 
   meta = {
     description = "Graphical editor for finite state machines";
-    homepage = "http://qfsm.sourceforge.net/";
+    homepage = http://qfsm.sourceforge.net/;
     license = stdenv.lib.licenses.gpl3Plus;
+    platforms = stdenv.lib.platforms.unix;
   };
 }

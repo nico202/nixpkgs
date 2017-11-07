@@ -1,7 +1,7 @@
 { stdenv, fetchFromGitHub, cmake, pkgconfig, pcre, zlib, sqlite }:
 
 stdenv.mkDerivation rec {
-  name = "faclon-${version}";
+  name = "falcon-${version}";
   version = "2013-09-19";
 
   src = fetchFromGitHub {
@@ -17,5 +17,6 @@ stdenv.mkDerivation rec {
     description = "Programming language with macros and syntax at once";
     license = licenses.gpl2;
     maintainers = with maintainers; [ pSub ];
+    platforms = with platforms; linux;
   };
 }

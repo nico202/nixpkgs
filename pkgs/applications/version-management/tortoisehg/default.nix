@@ -1,29 +1,24 @@
-{ pkgs, lib, mercurial, pyPackages ? pkgs.python27Packages }:
+{lib, fetchurl, mercurial, python2Packages}:
 
-pkgs.buildPythonPackage rec {
+python2Packages.buildPythonApplication rec {
     name = "tortoisehg-${version}";
-    version = "3.6";
-    namePrefix = "";
+    version = "4.1.1";
 
-    src = pkgs.fetchurl {
+    src = fetchurl {
       url = "https://bitbucket.org/tortoisehg/targz/downloads/${name}.tar.gz";
-      sha256 = "ec43d13f029bb23a12129d2a2c3b3b4daf3d8121cbb5c9c23e4872f7b0b75ad8";
+      sha256 = "14fy5p5hx4iij5kyma9679nrprd9lsjr6j047bfyfrwa3l4knj2g";
     };
 
-    pythonPath = [ pkgs.pyqt4 mercurial ]
-       ++ (with pyPackages; [qscintilla iniparse]);
+    pythonPath = with python2Packages; [ pyqt4 mercurial qscintilla iniparse ];
 
-    propagatedBuildInputs = with pyPackages; [ qscintilla iniparse ];
+    propagatedBuildInputs = with python2Packages; [ qscintilla iniparse ];
 
     doCheck = false;
-
-    postUnpack = ''
-     substituteInPlace $sourceRoot/setup.py \
-       --replace "/usr/share/" "$out/share/"
-    '';
-
-    postInstall = ''
-     ln -s $out/bin/thg $out/bin/tortoisehg     #convenient alias
+    dontStrip = true;
+    buildPhase = "";
+    installPhase = ''
+      ${python2Packages.python.executable} setup.py install --prefix=$out
+      ln -s $out/bin/thg $out/bin/tortoisehg     #convenient alias
     '';
 
     meta = {
@@ -31,6 +26,6 @@ pkgs.buildPythonPackage rec {
       homepage = http://tortoisehg.bitbucket.org/;
       license = lib.licenses.gpl2;
       platforms = lib.platforms.linux;
-      maintainers = [ "abcz2.uprola@gmail.com" ];
+      maintainers = with lib.maintainers; [ danbst ];
     };
 }

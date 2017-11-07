@@ -1,11 +1,12 @@
 { stdenv, fetchurl, perl, libunwind }:
 
 stdenv.mkDerivation rec {
-  name = "strace-4.11";
+  name = "strace-${version}";
+  version = "4.19";
 
   src = fetchurl {
     url = "mirror://sourceforge/strace/${name}.tar.xz";
-    sha256 = "0ll1rpjs441jac2689nga74qb49x1zkg8a2b7rzzchgrv1n5ysp8";
+    sha256 = "10bjh2mrkvx41fk60b2iqv5b5k4r7a3qdsx04iyg904jqb3fp4vw";
   };
 
   nativeBuildInputs = [ perl ];

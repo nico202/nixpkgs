@@ -1,7 +1,7 @@
-{ stdenv, fetchzip, autoreconfHook, pkgconfig, libnl }:
+{ stdenv, fetchFromGitHub, autoreconfHook, pkgconfig, libnl }:
 
 let
-  sourceAttrs = (import ./source.nix) { inherit fetchzip; };
+  sourceAttrs = (import ./source.nix) { inherit fetchFromGitHub; };
 in
 
 stdenv.mkDerivation {
@@ -9,9 +9,13 @@ stdenv.mkDerivation {
 
   src = sourceAttrs.src;
 
-  sourceRoot = "Jool-${sourceAttrs.version}.zip/usr";
+  sourceRoot = "Jool-v${sourceAttrs.version}-src/usr";
 
   buildInputs = [ autoreconfHook pkgconfig libnl ];
+
+  postPatch = ''
+    chmod u+w -R ../common
+  '';
 
   meta = with stdenv.lib; {
     homepage = https://www.jool.mx/;

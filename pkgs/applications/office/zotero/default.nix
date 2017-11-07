@@ -1,13 +1,13 @@
-{ stdenv, fetchurl, bash, firefox, perl, unzipNLS, xorg }:
+{ stdenv, fetchurl, lib, bash, firefox, perl, unzipNLS, xorg }:
 
 let
 
   xpi = fetchurl {
     url = "https://download.zotero.org/extension/zotero-${version}.xpi";
-    sha256 = "02h2ja08v8as4fawj683rh5rmxsjf5d0qmvqa77i176nm20y5s7s";
+    sha256 = "1dyf578yfj3xr9kkhmsvbkvraw2arghmh67ksi5c8qlxczx5i1xy";
   };
 
-  version = "4.0.28";
+  version = "4.0.29";
 
 in
 stdenv.mkDerivation {
@@ -15,8 +15,8 @@ stdenv.mkDerivation {
   inherit version;
 
   src = fetchurl {
-    url = "https://github.com/zotero/zotero-standalone-build/archive/4.0.28.8.tar.gz";
-    sha256 = "ab1fd5dde9bd2a6b6d31cc9a53183a04de3698f1273a943ef31ecc4c42808a68";
+    url = "https://github.com/zotero/zotero-standalone-build/archive/4.0.29.2.tar.gz";
+    sha256 = "0pfip6s5dawp7wp8r5czvzlnxvvdwjja64g71h9dxyxrh49v2mxa";
   };
 
   nativeBuildInputs = [ perl unzipNLS ];
@@ -30,7 +30,7 @@ stdenv.mkDerivation {
     unzip "${xpi}" -d "$out/libexec/zotero"
 
     BUILDID=`date +%Y%m%d`
-    GECKO_VERSION="${firefox.passthru.version}"
+    GECKO_VERSION="${lib.removeSuffix "esr" firefox.passthru.version}"
     UPDATE_CHANNEL="default"
 
     # Copy branding
@@ -52,8 +52,8 @@ stdenv.mkDerivation {
 
     # Copy application.ini and modify
     cp assets/application.ini "$out/libexec/zotero/application.ini"
-    perl -pi -e "s/{{VERSION}}/$version/" "$out/libexec/zotero/application.ini"
-    perl -pi -e "s/{{BUILDID}}/$BUILDID/" "$out/libexec/zotero/application.ini"
+    perl -pi -e "s/\{\{VERSION}}/$version/" "$out/libexec/zotero/application.ini"
+    perl -pi -e "s/\{\{BUILDID}}/$BUILDID/" "$out/libexec/zotero/application.ini"
     perl -pi -e "s/^MaxVersion.*\$/MaxVersion=$GECKO_VERSION/" "$out/libexec/zotero/application.ini"
 
     # Copy prefs.js and modify
@@ -73,10 +73,10 @@ stdenv.mkDerivation {
   installCheckPhase = "$out/bin/zotero --version";
 
   meta = with stdenv.lib; {
-    homepage = "https://www.zotero.org";
+    homepage = https://www.zotero.org;
     description = "Collect, organize, cite, and share your research sources";
     license = licenses.agpl3;
     platforms = platforms.linux;
-    maintainers = with maintainers; [ ttuegel ];
+    broken = true; # probably; see #20049
   };
 }
