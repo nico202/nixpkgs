@@ -58,7 +58,12 @@ let
   version = "git-${majorVersion}.${minorVersion}.${maintenanceVersion}-2018-06-07";
 in
 
-stdenv.mkDerivation rec {
+let
+  majorVersion = "0";
+  minorVersion = "7";
+  maintenanceVersion = "0";
+  version = "${majorVersion}.${minorVersion}.${maintenanceVersion}";
+in stdenv.mkDerivation rec {
   pname = "julia";
   inherit version;
   name = "${pname}-${version}";
@@ -189,7 +194,7 @@ stdenv.mkDerivation rec {
 
   passthru = {
     inherit majorVersion minorVersion maintenanceVersion;
-#    site = "share/julia/site/v${majorVersion}.${minorVersion}";
+    site = "share/julia/site/v${majorVersion}.${minorVersion}";
   };
 
   meta = {

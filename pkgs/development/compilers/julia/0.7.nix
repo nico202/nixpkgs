@@ -58,7 +58,12 @@ let
   version = "${majorVersion}.${minorVersion}.${maintenanceVersion}";
 in
 
-stdenv.mkDerivation rec {
+let
+  majorVersion = "0";
+  minorVersion = "5";
+  maintenanceVersion = "2";
+  version = "${majorVersion}.${minorVersion}.${maintenanceVersion}";
+in stdenv.mkDerivation rec {
   pname = "julia";
   inherit version;
   name = "${pname}-${version}";
@@ -107,7 +112,7 @@ stdenv.mkDerivation rec {
               or (throw "unsupported architecture: ${arch}");
       # Julia requires Pentium 4 (SSE2) or better
       # (https://github.com/JuliaCI/julia-buildbot/blob/49bde486c0412fad0969f46fb58b621f33caa744/master/inventory.py#L61-L73)
-      cpuTarget = { "x86_64" = "generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,base(1)"; 
+      cpuTarget = { "x86_64" = "generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,base(1)";
                     "i686" = "pentium4;sandybridge,-xsaveopt,clone_all"; }."${arch}"
                   or (throw "unsupported architecture: ${arch}");
     in [
@@ -189,7 +194,7 @@ stdenv.mkDerivation rec {
 
   passthru = {
     inherit majorVersion minorVersion maintenanceVersion;
-#    site = "share/julia/site/v${majorVersion}.${minorVersion}";
+    site = "share/julia/site/v${majorVersion}.${minorVersion}";
   };
 
   meta = {
