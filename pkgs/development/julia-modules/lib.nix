@@ -18,7 +18,5 @@ self:
     stdenv.lib.makeSearchPath julia.site (builtins.filter self.isJuliaPackage packages);
 
   # Generic function for building Julia packages
-  buildJuliaPackage = self.callPackage ./build-julia-package.nix { julia = julia; };
-
-
+  buildJuliaPackage = self.callPackage ./lib/build-julia-package.nix { julia = julia; };
 }
