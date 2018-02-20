@@ -6,6 +6,7 @@
 , makeWrapper
 , isJuliaPackage
 , makeJuliaPath
+, deepReq
 }:
 
 { packages ? []
@@ -18,7 +19,7 @@ let
   # Julia packages
   dependencies = stdenv.lib.filter isJuliaPackage (stdenv.lib.closePropagation packages);
 
-  JULIA_DEPOT_PATH = makeJuliaPath dependencies;
+  JULIA_DEPOT_PATH = makeJuliaPath (deepReq packages);
 
 # Use pkgs.buildEnv and link /bin of all dependencies?
 in stdenv.mkDerivation {
