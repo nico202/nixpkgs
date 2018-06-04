@@ -6848,17 +6848,17 @@ with pkgs;
       #   Unexpected Failures: 4
 
       patches = [
-        # https://github.com/JuliaLang/julia/blob/master/deps/llvm.mk
-        ../development/compilers/llvm/6/julia/llvm-D27629-AArch64-large_model_4.0.patch
+# https://github.com/JuliaLang/julia/blob/master/deps/llvm.mk
+        # ../development/compilers/llvm/6/julia/llvm-D27629-AArch64-large_model_4.0.patch # disabling this patch 2 more tests are passing
         ../development/compilers/llvm/6/julia/llvm-D34078-vectorize-fdiv.patch
-        ../development/compilers/llvm/6/julia/llvm-6.0-NVPTX-addrspaces.patch
+        # ../development/compilers/llvm/6/julia/llvm-6.0-NVPTX-addrspaces.patch  # disabling this patch fixes tests bug21465 and lower-kernel-ptr-arg
         ../development/compilers/llvm/6/julia/llvm-D42262-jumpthreading-not-i1.patch
         ../development/compilers/llvm/6/julia/llvm-PPC-addrspaces.patch
         ../development/compilers/llvm/6/julia/llvm-D42260.patch
         ../development/compilers/llvm/6/julia/llvm-rL326843-missing-header.patch
         ../development/compilers/llvm/6/julia/llvm-6.0-r327540.patch
         ../development/compilers/llvm/6/julia/llvm-6.0.0_D27296-libssp.patch
-        ../development/compilers/llvm/6/julia/llvm-6.0-D44650.patch
+        # ../development/compilers/llvm/6/julia/llvm-6.0-D44650.patch # should just fix build on mingw32
         ../development/compilers/llvm/6/julia/llvm-D45008.patch
         ../development/compilers/llvm/6/julia/llvm-D45070.patch
         ../development/compilers/llvm/6/julia/llvm-6.0.0-ifconv-D45819.patch
