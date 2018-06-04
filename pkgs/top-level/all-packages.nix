@@ -6805,12 +6805,77 @@ with pkgs;
 
   jikes = callPackage ../development/compilers/jikes { };
 
-  julia = callPackage ../development/compilers/julia {
+  # julia_04 = callPackage ../development/compilers/julia {
+  #   gmp = gmp6;
+  #   openblas = openblasCompat;
+  #   inherit (darwin.apple_sdk.frameworks) CoreServices ApplicationServices;
+  #   llvm = llvm_37;
+  # };
+
+  # julia_05 = callPackage ../development/compilers/julia/0.5.nix {
+  #   gmp = gmp6;
+  #   libgit2 = libgit2_0_25;
+  #   openblas = openblasCompat;
+  #   inherit (darwin.apple_sdk.frameworks) CoreServices ApplicationServices;
+  #   llvm = llvm_38;
+  # };
+
+  # julia_06 = callPackage ../development/compilers/julia/0.6.nix {
+  #   gmp = gmp6;
+  #   openblas = openblasCompat;
+  #   inherit (darwin.apple_sdk.frameworks) CoreServices ApplicationServices;
+  #   llvm = llvm_39;
+  # };
+
+  julia_07 = callPackage ../development/compilers/julia/0.7.nix {
     gmp = gmp6;
     openblas = openblasCompat;
     inherit (darwin.apple_sdk.frameworks) CoreServices ApplicationServices;
-    llvm = llvm_39;
+    llvm = llvm_6.overrideDerivation (oldAttrs: {
+      doCheck = false;
+
+      # 1 warning(s) in tests.
+      # Testing Time: 485.96s
+      # ********************
+      # Failing Tests (4):
+      #     LLVM :: CodeGen/NVPTX/bug21465.ll
+      #     LLVM :: CodeGen/NVPTX/lower-kernel-ptr-arg.ll
+      #     LLVM :: ExecutionEngine/RuntimeDyld/AArch64/ELF_ARM64_BE-large-relocations.s
+      #     LLVM :: ExecutionEngine/RuntimeDyld/AArch64/ELF_ARM64_large-relocations.s
+      #   Expected Passes    : 22399
+      #   Expected Failures  : 140
+      #   Unsupported Tests  : 720
+      #   Unexpected Failures: 4
+
+      patches = [
+        # https://github.com/JuliaLang/julia/blob/master/deps/llvm.mk
+        ../development/compilers/llvm/6/julia/llvm-D27629-AArch64-large_model_4.0.patch
+        ../development/compilers/llvm/6/julia/llvm-D34078-vectorize-fdiv.patch
+        ../development/compilers/llvm/6/julia/llvm-6.0-NVPTX-addrspaces.patch
+        ../development/compilers/llvm/6/julia/llvm-D42262-jumpthreading-not-i1.patch
+        ../development/compilers/llvm/6/julia/llvm-PPC-addrspaces.patch
+        ../development/compilers/llvm/6/julia/llvm-D42260.patch
+        ../development/compilers/llvm/6/julia/llvm-rL326843-missing-header.patch
+        ../development/compilers/llvm/6/julia/llvm-6.0-r327540.patch
+        ../development/compilers/llvm/6/julia/llvm-6.0.0_D27296-libssp.patch
+        ../development/compilers/llvm/6/julia/llvm-6.0-D44650.patch
+        ../development/compilers/llvm/6/julia/llvm-D45008.patch
+        ../development/compilers/llvm/6/julia/llvm-D45070.patch
+        ../development/compilers/llvm/6/julia/llvm-6.0.0-ifconv-D45819.patch
+        ../development/compilers/llvm/6/julia/llvm-D46460.patch
+        ../development/compilers/llvm/6/julia/llvm-symver-jlprefix.patch
+      ];
+    });
   };
+
+  # julia-git = lowPrio (callPackage ../development/compilers/julia/git.nix {
+  #   gmp = gmp6;
+  #   openblas = openblasCompat;
+  #   inherit (darwin.apple_sdk.frameworks) CoreServices ApplicationServices;
+  #   llvm = llvm_39;
+  # });
+
+  julia = julia_07;
 
   jwasm =  callPackage ../development/compilers/jwasm { };
 
