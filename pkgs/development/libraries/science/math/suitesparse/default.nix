@@ -66,9 +66,10 @@ stdenv.mkDerivation {
         done
         ${if enableCuda then cudatoolkit else stdenv.cc.outPath}/bin/${if enableCuda then "nvcc" else "cc"} *.o ${if stdenv.isDarwin then "-dynamiclib" else "--shared"} -o "$out/lib/libsuitesparse${SHLIB_EXT}" -lopenblas ${stdenv.lib.optionalString enableCuda "-lcublas"}
     )
-    for i in umfpack cholmod amd camd colamd spqr; do
+    for i in umfpack cholmod amd camd colamd ccolamd spqr; do
       ln -s libsuitesparse${SHLIB_EXT} "$out"/lib/lib$i${SHLIB_EXT}
     done
+    ln -s libsuitesparse${SHLIB_EXT} "$out"/lib/libsuitesparseconfig${SHLIB_EXT}
 
     # Install documentation
     outdoc=$out/share/doc/${name}
