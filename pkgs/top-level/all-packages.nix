@@ -6832,7 +6832,7 @@ with pkgs;
     openblas = openblasCompat;
     inherit (darwin.apple_sdk.frameworks) CoreServices ApplicationServices;
     llvm = llvm_6.overrideDerivation (oldAttrs: {
-      doCheck = false;
+      doCheck = true;
 
       # 1 warning(s) in tests.
       # Testing Time: 485.96s
