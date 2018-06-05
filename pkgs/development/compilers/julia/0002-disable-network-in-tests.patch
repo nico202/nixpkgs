@@ -1,0 +1,11 @@
+--- b/test/choosetests.jl
++++ a/test/choosetests.jl
+@@ -142,7 +142,7 @@
+     net_required_for = ["Sockets", "LibGit2"]
+     net_on = true
+     try
++        ipa = error("NixOS: network disabled")
+-        ipa = getipaddr()
+     catch
+         @warn "Networking unavailable: Skipping tests [" * join(net_required_for, ", ") * "]"
+         net_on = false

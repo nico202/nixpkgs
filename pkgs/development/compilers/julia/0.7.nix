@@ -63,7 +63,6 @@ stdenv.mkDerivation rec {
   pname = "julia";
   version = "0.7.0";
   name = "${pname}-${version}";
-  doCheck = false;
 
   src = fetchFromGitHub {
     owner = "JuliaLang";
@@ -83,15 +82,13 @@ stdenv.mkDerivation rec {
 
   patches = [
     ./0001.1-use-system-utf8proc.patch
+    ./0002-disable-network-in-tests.patch
+    ./0003-disable-Distributed.patch
     # ./0002-use-system-suitesparse.patch
   ] ++ stdenv.lib.optional stdenv.needsPax ./0004-hardened.patch;
 
   postPatch = ''
     patchShebangs . contrib
-    for i in backtrace cmdlineargs; do
-      mv test/$i.jl{,.off}
-      touch test/$i.jl
-    done
   '';
 
   buildInputs = [
@@ -167,7 +164,7 @@ stdenv.mkDerivation rec {
 
   enableParallelBuilding = true;
 
-  # doCheck = !stdenv.isDarwin;
+  doCheck = !stdenv.isDarwin;
   checkTarget = "testall";
   # Julia's tests require read/write access to $HOME
   preCheck = ''

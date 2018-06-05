@@ -1,0 +1,13 @@
+diff --git a/test/choosetests.jl b/test/choosetests.jl
+index f330540..a425252 100644
+--- a/test/choosetests.jl
++++ b/test/choosetests.jl
+@@ -139,7 +139,7 @@ function choosetests(choices = [])
+         filter!(x -> (x != "Profile"), tests)
+     end
+ 
+-    net_required_for = ["Sockets", "LibGit2"]
++    net_required_for = ["Sockets", "LibGit2", "Distributed"]
+     net_on = true
+     try
+         ipa = error("NixOS: network disabled")
