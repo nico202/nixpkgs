@@ -63,6 +63,7 @@ stdenv.mkDerivation rec {
   pname = "julia";
   version = "0.7.0";
   name = "${pname}-${version}";
+  doCheck = false;
 
   src = fetchFromGitHub {
     owner = "JuliaLang";
@@ -166,7 +167,7 @@ stdenv.mkDerivation rec {
 
   enableParallelBuilding = true;
 
-  doCheck = !stdenv.isDarwin;
+  # doCheck = !stdenv.isDarwin;
   checkTarget = "testall";
   # Julia's tests require read/write access to $HOME
   preCheck = ''
