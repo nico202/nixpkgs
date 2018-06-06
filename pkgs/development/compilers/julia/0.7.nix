@@ -51,11 +51,16 @@ let
     url = "mirror://pypi/v/virtualenv/virtualenv-${virtualenvVersion}.tar.gz";
     sha256 = "06fw4liazpx5vf3am45q2pdiwrv0id7ckv7n6zmpml29x6vkzmkh";
   };
+
+  majorVersion = "0";
+  minorVersion = "7";
+  maintenanceVersion = "0";
+  version = "${majorVersion}.${minorVersion}.${maintenanceVersion}";
 in
 
 stdenv.mkDerivation rec {
   pname = "julia";
-  version = "0.7.0";
+  inherit version;
   name = "${pname}-${version}";
 
   src = fetchFromGitHub {
@@ -101,7 +106,9 @@ stdenv.mkDerivation rec {
       march = { "x86_64" = "x86-64"; "i686" = "pentium4"; }."${arch}"
               or (throw "unsupported architecture: ${arch}");
       # Julia requires Pentium 4 (SSE2) or better
-      cpuTarget = { "x86_64" = "x86-64"; "i686" = "pentium4"; }."${arch}"
+      # (https://github.com/JuliaCI/julia-buildbot/blob/49bde486c0412fad0969f46fb58b621f33caa744/master/inventory.py#L61-L73)
+      cpuTarget = { "x86_64" = "generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,base(1)"; 
+                    "i686" = "pentium4;sandybridge,-xsaveopt,clone_all"; }."${arch}"
                   or (throw "unsupported architecture: ${arch}");
     in [
       "ARCH=${arch}"
@@ -179,6 +186,11 @@ stdenv.mkDerivation rec {
       fi
     done
   '';
+
+  passthru = {
+    inherit majorVersion minorVersion maintenanceVersion;
+#    site = "share/julia/site/v${majorVersion}.${minorVersion}";
+  };
 
   meta = {
     description = "High-level performance-oriented dynamical language for technical computing";
