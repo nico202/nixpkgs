@@ -4,10 +4,10 @@
 , runCommand
 , paxctl
 # libjulia dependencies
-, libunwind, readline, utf8proc, zlib
+, libunwind, utf8proc, zlib
 , llvm, libffi, ncurses
 # standard library dependencies
-, curl, fftwSinglePrec, fftw, gmp, libgit2, mpfr, openlibm, openspecfun, pcre2
+, curl, fftwSinglePrec, fftw, gmp, libgit2, mpfr, openlibm, pcre2
 # linear algebra
 , openblas, arpack, suitesparse
 # Darwin frameworks
@@ -37,12 +37,6 @@ let
   libuv = fetchurl {
     url = "https://api.github.com/repos/JuliaLang/libuv/tarball/${libuvVersion}";
     sha256 = "0s6dik373yvpj8xxmps3wasr6s5wrzbccpfw7vzlclbgxlpyjq0i";
-  };
-
-  rmathVersion = "0.1";
-  rmath-julia = fetchurl {
-    url = "https://api.github.com/repos/JuliaLang/Rmath-julia/tarball/v${rmathVersion}";
-    sha256 = "1qyps217175qhid46l8f5i1v8i82slgp23ia63x2hzxwfmx8617p";
   };
 
   libwhichVersion = "81e9723c0273d78493dc8c8ed570f68d9ce7e89e";
@@ -75,7 +69,6 @@ stdenv.mkDerivation rec {
     mkdir deps/srccache
     cp "${libuv}" "./deps/srccache/libuv-${libuvVersion}.tar.gz"
     cp "${dsfmt}" "./deps/srccache/dsfmt-${dsfmtVersion}.tar.gz"
-    cp "${rmath-julia}" "./deps/srccache/Rmath-julia-${rmathVersion}.tar.gz"
     cp "${virtualenv}" "./deps/srccache/virtualenv-${virtualenvVersion}.tar.gz"
     cp "${libwhich}" "./deps/srccache/libwhich-${libwhichVersion}.tar.gz"
   '';
@@ -93,7 +86,7 @@ stdenv.mkDerivation rec {
 
   buildInputs = [
     arpack fftw fftwSinglePrec gmp libgit2 libunwind mpfr
-    pcre2.dev openblas openlibm openspecfun readline suitesparse utf8proc
+    pcre2.dev openblas openlibm suitesparse utf8proc
     zlib llvm
   ]
   ++ stdenv.lib.optionals stdenv.isDarwin [CoreServices ApplicationServices]
@@ -142,12 +135,10 @@ stdenv.mkDerivation rec {
 
       "USE_SYSTEM_MPFR=1"
       "USE_SYSTEM_OPENLIBM=1"
-      "USE_SYSTEM_OPENSPECFUN=1"
       "USE_SYSTEM_PATCHELF=1"
       "USE_SYSTEM_PCRE=1"
       "PCRE_CONFIG=${pcre2.dev}/bin/pcre2-config"
       "PCRE_INCL_PATH=${pcre2.dev}/include/pcre2.h"
-      "USE_SYSTEM_READLINE=1"
       "USE_SYSTEM_UTF8PROC=1"
       "USE_SYSTEM_ZLIB=1"
     ];
@@ -156,7 +147,7 @@ stdenv.mkDerivation rec {
 
   LD_LIBRARY_PATH = makeLibraryPath [
     arpack fftw fftwSinglePrec gmp libgit2 mpfr openblas openlibm
-    openspecfun pcre2 suitesparse llvm
+    pcre2 suitesparse llvm
   ];
 
   dontStrip = true;
