@@ -6644,7 +6644,7 @@ with pkgs;
     llvm = llvm_39;
   };
 
-  julia_07 = callPackage ../development/compilers/julia/0.7.nix {
+  julia_07 = lowPrio (callPackage ../development/compilers/julia/0.7.nix {
     gmp = gmp6;
     openblas = openblasCompat;
     inherit (darwin.apple_sdk.frameworks) CoreServices ApplicationServices;
@@ -6720,7 +6720,7 @@ with pkgs;
         })
       ];
     });
-  };
+  });
 
   julia-git = lowPrio (callPackage ../development/compilers/julia/git.nix {
     gmp = gmp6;
@@ -6800,7 +6800,7 @@ with pkgs;
     });
   });
 
-  julia = julia_07;
+  julia = julia_06;
 
   jwasm =  callPackage ../development/compilers/jwasm { };
 
