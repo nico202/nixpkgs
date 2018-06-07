@@ -1,11 +1,13 @@
-{ stdenv, fetchgit, fetchurl
+{ stdenv, fetchFromGitHub, fetchurl, fetchzip
 # build tools
-, gfortran, m4, makeWrapper, patchelf, perl, which, python2, paxctl
+, gfortran, m4, makeWrapper, patchelf, perl, which, python2
+, runCommand
+, paxctl
 # libjulia dependencies
-, libunwind, readline, utf8proc, zlib
-, llvm
+, libunwind, utf8proc, zlib
+, llvm, libffi, ncurses
 # standard library dependencies
-, curl, fftwSinglePrec, fftw, gmp, libgit2, mpfr, openlibm, openspecfun, pcre2
+, curl, fftwSinglePrec, fftw, gmp, libgit2, mpfr, openlibm, pcre2
 # linear algebra
 , openblas, arpack, suitesparse
 # Darwin frameworks
@@ -31,47 +33,56 @@ let
     sha256 = "03kaqbjbi6viz0n33dk5jlf6ayxqlsq4804n7kwkndiga9s4hd42";
   };
 
-  libuvVersion = "8d5131b6c1595920dd30644cd1435b4f344b46c8";
+  libuvVersion = "be317349252699670131395f125c3861d793ca86";
   libuv = fetchurl {
     url = "https://api.github.com/repos/JuliaLang/libuv/tarball/${libuvVersion}";
-    sha256 = "1886r04igcs0k24sbb61wn10f8ki35c39jsnc5djv3rg4hvn9l49";
+    sha256 = "0s6dik373yvpj8xxmps3wasr6s5wrzbccpfw7vzlclbgxlpyjq0i";
   };
 
-  rmathVersion = "0.1";
-  rmath-julia = fetchurl {
-    url = "https://api.github.com/repos/JuliaLang/Rmath-julia/tarball/v${rmathVersion}";
-    sha256 = "1qyps217175qhid46l8f5i1v8i82slgp23ia63x2hzxwfmx8617p";
+  libwhichVersion = "81e9723c0273d78493dc8c8ed570f68d9ce7e89e";
+  libwhich = fetchurl {
+    url = "https://api.github.com/repos/vtjnash/libwhich/tarball/${libwhichVersion}";
+    sha256 = "1p7zg31kpmpbmh1znrk1xrbd074agx13b9q4dcw8n2zrwwdlbz3b";
   };
-  
+
+
   virtualenvVersion = "15.0.0";
   virtualenv = fetchurl {
     url = "mirror://pypi/v/virtualenv/virtualenv-${virtualenvVersion}.tar.gz";
     sha256 = "06fw4liazpx5vf3am45q2pdiwrv0id7ckv7n6zmpml29x6vkzmkh";
   };
+
+  majorVersion = "0";
+  minorVersion = "7";
+  maintenanceVersion = "0";
+  version = "git-${majorVersion}.${minorVersion}.${maintenanceVersion}-2018-06-07";
 in
 
 stdenv.mkDerivation rec {
   pname = "julia";
-  version = "0.6.0-dev-2016-11-25";
+  inherit version;
   name = "${pname}-${version}";
 
-  src = fetchgit {
-    url = "https://github.com/JuliaLang/${pname}";
-    rev = "03c24644815ba5320d038bb60c08565375fea1d9";
-    sha256 = "103mg9dz8yda2zxbd85jv8zhdzs29jj0dxrm2ppxpfhbbf6fxqav";
+  src = fetchFromGitHub {
+    owner = "JuliaLang";
+    repo = "${pname}";
+    rev = "91d2071f0776ceb4c53bc95277ba967aaa0a5608";
+    sha256 = "0aad86w71zhnpbdc3qrx5bxiqc1zz89lk33ma51manw7fan45sa6";
   };
 
   prePatch = ''
     mkdir deps/srccache
-    cp "${dsfmt}" "./deps/srccache/dsfmt-${dsfmtVersion}.tar.gz"
-    cp "${rmath-julia}" "./deps/srccache/Rmath-julia-${rmathVersion}.tar.gz"
     cp "${libuv}" "./deps/srccache/libuv-${libuvVersion}.tar.gz"
+    cp "${dsfmt}" "./deps/srccache/dsfmt-${dsfmtVersion}.tar.gz"
     cp "${virtualenv}" "./deps/srccache/virtualenv-${virtualenvVersion}.tar.gz"
+    cp "${libwhich}" "./deps/srccache/libwhich-${libwhichVersion}.tar.gz"
   '';
 
   patches = [
     ./0001.1-use-system-utf8proc.patch
-    ./0002-use-system-suitesparse.patch
+    ./0002-disable-network-in-tests.patch
+    ./0003-disable-Distributed.patch
+    # ./0002-use-system-suitesparse.patch
   ] ++ stdenv.lib.optional stdenv.needsPax ./0004-hardened.patch;
 
   postPatch = ''
@@ -80,7 +91,7 @@ stdenv.mkDerivation rec {
 
   buildInputs = [
     arpack fftw fftwSinglePrec gmp libgit2 libunwind mpfr
-    pcre2.dev openblas openlibm openspecfun readline suitesparse utf8proc
+    pcre2.dev openblas openlibm suitesparse utf8proc
     zlib llvm
   ]
   ++ stdenv.lib.optionals stdenv.isDarwin [CoreServices ApplicationServices]
@@ -95,7 +106,9 @@ stdenv.mkDerivation rec {
       march = { "x86_64" = "x86-64"; "i686" = "pentium4"; }."${arch}"
               or (throw "unsupported architecture: ${arch}");
       # Julia requires Pentium 4 (SSE2) or better
-      cpuTarget = { "x86_64" = "x86-64"; "i686" = "pentium4"; }."${arch}"
+      # (https://github.com/JuliaCI/julia-buildbot/blob/49bde486c0412fad0969f46fb58b621f33caa744/master/inventory.py#L61-L73)
+      cpuTarget = { "x86_64" = "generic;sandybridge,-xsaveopt,clone_all;haswell,-rdrnd,base(1)";
+                    "i686" = "pentium4;sandybridge,-xsaveopt,clone_all"; }."${arch}"
                   or (throw "unsupported architecture: ${arch}");
     in [
       "ARCH=${arch}"
@@ -123,16 +136,16 @@ stdenv.mkDerivation rec {
       "USE_SYSTEM_GMP=1"
       "USE_SYSTEM_LIBGIT2=1"
       "USE_SYSTEM_LIBUNWIND=1"
-      # 'replutil' test failure with LLVM 3.8.0, invalid libraries with 3.7.1
+
       "USE_SYSTEM_LLVM=1"
+      "LLVM_VER=6.0.0"
+
       "USE_SYSTEM_MPFR=1"
       "USE_SYSTEM_OPENLIBM=1"
-      "USE_SYSTEM_OPENSPECFUN=1"
       "USE_SYSTEM_PATCHELF=1"
       "USE_SYSTEM_PCRE=1"
       "PCRE_CONFIG=${pcre2.dev}/bin/pcre2-config"
       "PCRE_INCL_PATH=${pcre2.dev}/include/pcre2.h"
-      "USE_SYSTEM_READLINE=1"
       "USE_SYSTEM_UTF8PROC=1"
       "USE_SYSTEM_ZLIB=1"
     ];
@@ -141,7 +154,7 @@ stdenv.mkDerivation rec {
 
   LD_LIBRARY_PATH = makeLibraryPath [
     arpack fftw fftwSinglePrec gmp libgit2 mpfr openblas openlibm
-    openspecfun pcre2 suitesparse llvm
+    pcre2 suitesparse llvm
   ];
 
   dontStrip = true;
@@ -149,7 +162,7 @@ stdenv.mkDerivation rec {
 
   enableParallelBuilding = true;
 
-  doCheck = true;
+  doCheck = !stdenv.isDarwin;
   checkTarget = "testall";
   # Julia's tests require read/write access to $HOME
   preCheck = ''
@@ -159,15 +172,25 @@ stdenv.mkDerivation rec {
   preBuild = ''
     sed -e '/^install:/s@[^ ]*/doc/[^ ]*@@' -i Makefile
     sed -e '/[$](DESTDIR)[$](docdir)/d' -i Makefile
+    export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
   '';
 
   postInstall = ''
-    for prog in "$out/bin/julia" "$out/bin/julia-debug"; do
-        wrapProgram "$prog" \
-            --prefix LD_LIBRARY_PATH : "$LD_LIBRARY_PATH:$out/lib/julia" \
-            --prefix PATH : "${stdenv.lib.makeBinPath [ curl ]}"
+    # Symlink shared libraries from LD_LIBRARY_PATH into lib/julia,
+    # as using a wrapper with LD_LIBRARY_PATH causes segmentation
+    # faults when program returns an error:
+    #   $ julia -e 'throw(Error())'
+    find $(echo $LD_LIBRARY_PATH | sed 's|:| |g') -maxdepth 1 -name '*.${if stdenv.isDarwin then "dylib" else "so"}*' | while read lib; do
+      if [[ ! -e $out/lib/julia/$(basename $lib) ]]; then
+        ln -sv $lib $out/lib/julia/$(basename $lib)
+      fi
     done
   '';
+
+  passthru = {
+    inherit majorVersion minorVersion maintenanceVersion;
+#    site = "share/julia/site/v${majorVersion}.${minorVersion}";
+  };
 
   meta = {
     description = "High-level performance-oriented dynamical language for technical computing";
@@ -175,6 +198,6 @@ stdenv.mkDerivation rec {
     license = stdenv.lib.licenses.mit;
     maintainers = with stdenv.lib.maintainers; [ raskin ];
     platforms = [ "i686-linux" "x86_64-linux" "x86_64-darwin" ];
-    broken = true; # since 2017-04-08.
+    broken = stdenv.isi686;
   };
 }
