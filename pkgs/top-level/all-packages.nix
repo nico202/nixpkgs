@@ -6801,9 +6801,12 @@ with pkgs;
   });
 
   julia = julia_06;
-
+  julia7 = julia_07;
   juliaLang = callPackage ../development/compilers/julia/julia-lang.nix { };
   juliaPackages = callPackage ../development/compilers/julia/packages/packages.nix { };
+  julia7Packages = callPackage ../development/compilers/julia/packages/packages.nix {
+    julia = julia7;
+  };
 
   jwasm =  callPackage ../development/compilers/jwasm { };
 
