@@ -6691,7 +6691,7 @@ with pkgs;
         (fetchpatch {
           name = "llvm-6.0.0_D27296-libssp.patch";
           url = "https://raw.githubusercontent.com/JuliaLang/julia/v0.7.0-alpha/deps/patches/llvm-6.0.0_D27296-libssp.patch";
-          sha256 = "06z8rsg050mzr5qfgz53zz1cky203m4cswcs9l1v7n6vywns9ym5";
+          sha256 = "1c0hpcrn29gqkinkzhri8d486g05744r4pp0sw2yfc7mlhv8wc1v";
         })
         (fetchpatch {
           name = "llvm-D45008.patch";
@@ -6764,7 +6764,7 @@ with pkgs;
         (fetchpatch {
           name = "llvm-6.0-r327540.patch";
           url = "https://raw.githubusercontent.com/JuliaLang/julia/91d2071f0776ceb4c53bc95277ba967aaa0a5608/deps/patches/llvm-6.0-r327540.patch";
-          sha256 = "092mmma5xrjx1hkd4my81jgl5v43d56pj31q9avfw0d2a6g8fi1v";
+          sha256 = "17xm0fa84py13iq8vyn4mvf7swnn6p3qv5sflwgv9crjpcydymfp";
         })
         (fetchpatch {
           name = "llvm-6.0.0_D27296-libssp.patch";
