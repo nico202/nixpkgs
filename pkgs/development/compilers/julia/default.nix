@@ -48,8 +48,8 @@ in
 
 let
   majorVersion = "0";
-  minorVersion = "4";
-  maintenanceVersion = "7";
+  minorVersion = "7";
+  maintenanceVersion = "0";
   version = "${majorVersion}.${minorVersion}.${maintenanceVersion}";
 in stdenv.mkDerivation rec {
   pname = "julia";

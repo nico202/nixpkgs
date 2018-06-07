@@ -1,4 +1,4 @@
-# Function that creates a Julia environment with specified packages on JULIA_LOAD_PATH.
+# Function that creates a Julia environment with specified packages on JULIA_DEPOT_PATH.
 
 { stdenv
 , julia
@@ -18,7 +18,7 @@ let
   # Julia packages
   dependencies = stdenv.lib.filter isJuliaPackage (stdenv.lib.closePropagation extraLibs);
 
-  JULIA_LOAD_PATH = makeJuliaPath dependencies;
+  JULIA_DEPOT_PATH = makeJuliaPath dependencies;
 
 # Use pkgs.buildEnv and link /bin of all dependencies?
 in stdenv.mkDerivation {
@@ -30,7 +30,7 @@ in stdenv.mkDerivation {
   installPhase = ''
     mkdir -p $out/bin
     for prg in ${julia}/bin/*; do
-      makeWrapper "$prg" "$out/bin/$(basename $prg)" --set JULIA_LOAD_PATH "${JULIA_LOAD_PATH}"
+      makeWrapper "$prg" "$out/bin/$(basename $prg)" --set JULIA_DEPOT_PATH "${JULIA_DEPOT_PATH}"
     done
   '';
 }

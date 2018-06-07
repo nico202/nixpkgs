@@ -13,7 +13,7 @@
 
 let
 
-  JULIA_LOAD_PATH = makeJuliaPath propagatedbuildInputs;
+  JULIA_DEPOT_PATH = makeJuliaPath propagatedbuildInputs;
 
 in  stdenv.mkDerivation (attrs // {
 
@@ -24,7 +24,7 @@ in  stdenv.mkDerivation (attrs // {
 
   phases = [ "unpackPhase" "patchPhase" "buildPhase" "installPhase" "fixupPhase" "checkPhase" ];
 
-  inherit JULIA_LOAD_PATH;
+  inherit JULIA_DEPOT_PATH;
 
   # We only need to build when deps/build.jl exists. Otherwise, we have a pure Julia package
   # that can be used straight away.
