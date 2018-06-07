@@ -6664,23 +6664,8 @@ with pkgs;
     openblas = openblasCompat;
     inherit (darwin.apple_sdk.frameworks) CoreServices ApplicationServices;
     llvm = llvm_6.overrideDerivation (oldAttrs: {
-      doCheck = true;
-
-      # 1 warning(s) in tests.
-      # Testing Time: 485.96s
-      # ********************
-      # Failing Tests (4):
-      #     LLVM :: CodeGen/NVPTX/bug21465.ll
-      #     LLVM :: CodeGen/NVPTX/lower-kernel-ptr-arg.ll
-      #     LLVM :: ExecutionEngine/RuntimeDyld/AArch64/ELF_ARM64_BE-large-relocations.s
-      #     LLVM :: ExecutionEngine/RuntimeDyld/AArch64/ELF_ARM64_large-relocations.s
-      #   Expected Passes    : 22399
-      #   Expected Failures  : 140
-      #   Unsupported Tests  : 720
-      #   Unexpected Failures: 4
-
       patches = [
-# https://github.com/JuliaLang/julia/blob/master/deps/llvm.mk
+        # https://github.com/JuliaLang/julia/blob/master/deps/llvm.mk
         # ../development/compilers/llvm/6/julia/llvm-D27629-AArch64-large_model_4.0.patch # disabling this patch 2 more tests are passing
         ../development/compilers/llvm/6/julia/llvm-D34078-vectorize-fdiv.patch
         # ../development/compilers/llvm/6/julia/llvm-6.0-NVPTX-addrspaces.patch  # disabling this patch fixes tests bug21465 and lower-kernel-ptr-arg
