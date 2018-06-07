@@ -6665,22 +6665,74 @@ with pkgs;
     inherit (darwin.apple_sdk.frameworks) CoreServices ApplicationServices;
     llvm = llvm_6.overrideDerivation (oldAttrs: {
       patches = [
+        # We must apply all patches defined here
         # https://github.com/JuliaLang/julia/blob/master/deps/llvm.mk
-        # ../development/compilers/llvm/6/julia/llvm-D27629-AArch64-large_model_4.0.patch # disabling this patch 2 more tests are passing
-        ../development/compilers/llvm/6/julia/llvm-D34078-vectorize-fdiv.patch
-        # ../development/compilers/llvm/6/julia/llvm-6.0-NVPTX-addrspaces.patch  # disabling this patch fixes tests bug21465 and lower-kernel-ptr-arg
-        ../development/compilers/llvm/6/julia/llvm-D42262-jumpthreading-not-i1.patch
-        ../development/compilers/llvm/6/julia/llvm-PPC-addrspaces.patch
-        ../development/compilers/llvm/6/julia/llvm-D42260.patch
-        ../development/compilers/llvm/6/julia/llvm-rL326843-missing-header.patch
-        ../development/compilers/llvm/6/julia/llvm-6.0-r327540.patch
-        ../development/compilers/llvm/6/julia/llvm-6.0.0_D27296-libssp.patch
-        # ../development/compilers/llvm/6/julia/llvm-6.0-D44650.patch # should just fix build on mingw32
-        ../development/compilers/llvm/6/julia/llvm-D45008.patch
-        ../development/compilers/llvm/6/julia/llvm-D45070.patch
-        ../development/compilers/llvm/6/julia/llvm-6.0.0-ifconv-D45819.patch
-        ../development/compilers/llvm/6/julia/llvm-D46460.patch
-        ../development/compilers/llvm/6/julia/llvm-symver-jlprefix.patch
+        # Those two are disabled because they break llvm tests
+        # llvm-D27629-AArch64-large_model_4.0.patch
+        # llvm-6.0-NVPTX-addrspaces.patch
+        # should just fix build on mingw32
+        # llvm-6.0-D44650.patch
+
+        (fetchpatch {
+          name = "llvm-D34078-vectorize-fdiv.patch";
+          url = "https://raw.githubusercontent.com/JuliaLang/julia/v0.7.0-alpha/deps/patches/llvm-D34078-vectorize-fdiv.patch";
+          sha256 = "06z8rsg050mzr5qfgz53zz1cky203m4cswcs9l1v7n6vywns9ym5";
+        })
+        (fetchpatch {
+          name = "llvm-D42262-jumpthreading-not-i1.patch";
+          url = "https://raw.githubusercontent.com/JuliaLang/julia/v0.7.0-alpha/deps/patches/llvm-D42262-jumpthreading-not-i1.patch";
+          sha256 = "1zwyf4c1dwab5qwkv4d0f2xipf4wqkz8kqai393pn205r5nccz2h";
+        })
+        (fetchpatch {
+          name = "llvm-PPC-addrspaces.patch";
+          url = "https://raw.githubusercontent.com/JuliaLang/julia/v0.7.0-alpha/deps/patches/llvm-PPC-addrspaces.patch";
+          sha256 = "0g0cv3w11ad0q22qv58v223nn278bpgsxvww796ch4l98hawm87m";
+        })
+        (fetchpatch {
+          name = "llvm-D42260.patch";
+          url = "https://raw.githubusercontent.com/JuliaLang/julia/v0.7.0-alpha/deps/patches/llvm-D42260.patch";
+          sha256 = "13m828f9gikm8fdab2w13kw9nfwwfllpw7r1jps77g8gjrj07alk";
+        })
+        (fetchpatch {
+          name = "llvm-rL326843-missing-header.patch";
+          url = "https://raw.githubusercontent.com/JuliaLang/julia/v0.7.0-alpha/deps/patches/llvm-rL326843-missing-header.patch";
+          sha256 = "1qg4w8j8cwjavi5i4nb7gn6nbhg36ar3q6avyr2za6awb127zrai";
+        })
+        (fetchpatch {
+          name = "llvm-6.0-r327540.patch";
+          url = "https://raw.githubusercontent.com/JuliaLang/julia/v0.7.0-alpha/deps/patches/llvm-6.0-r327540.patch";
+          sha256 = "092mmma5xrjx1hkd4my81jgl5v43d56pj31q9avfw0d2a6g8fi1v";
+        })
+        (fetchpatch {
+          name = "llvm-6.0.0_D27296-libssp.patch";
+          url = "https://raw.githubusercontent.com/JuliaLang/julia/v0.7.0-alpha/deps/patches/llvm-6.0.0_D27296-libssp.patch";
+          sha256 = "0s5hi2r1j63i8m6ig1346crx2aiv9f7rgb3mg80kw1wx5y7pdpfh";
+        })
+        (fetchpatch {
+          name = "llvm-D45008.patch";
+          url = "https://raw.githubusercontent.com/JuliaLang/julia/v0.7.0-alpha/deps/patches/llvm-D45008.patch";
+          sha256 = "1p521i793b2k4d9xvrshxbn7ldpk3fi1vgpaxm5gvm2in8989lpz";
+        })
+        (fetchpatch {
+          name = "llvm-D45070.patch";
+          url = "https://raw.githubusercontent.com/JuliaLang/julia/v0.7.0-alpha/deps/patches/llvm-D45070.patch";
+          sha256 = "0hw23s9kw9211cdlzi4qq10jqs36v07v4k1ng4ck2z0kpm64zwsb";
+        })
+        (fetchpatch {
+          name = "llvm-6.0.0-ifconv-D45819.patch";
+          url = "https://raw.githubusercontent.com/JuliaLang/julia/v0.7.0-alpha/deps/patches/llvm-6.0.0-ifconv-D45819.patch";
+          sha256 = "0kvh78pcvnq4b650b3fy7vnjfjn99dxhidkc03q3p78jkk5d8i43";
+        })
+        (fetchpatch {
+          name = "llvm-D46460.patch";
+          url = "https://raw.githubusercontent.com/JuliaLang/julia/v0.7.0-alpha/deps/patches/llvm-D46460.patch";
+          sha256 = "1miqgswdc0qvbaf4571c2xkxyp9ais06b1bcpa83sq22vr4hbsfb";
+        })
+        (fetchpatch {
+          name = "llvm-symver-jlprefix.patch";
+          url = "https://raw.githubusercontent.com/JuliaLang/julia/v0.7.0-alpha/deps/patches/llvm-symver-jlprefix.patch";
+          sha256 = "0vzva3hc7fy5lvkkgy67893rz3y9gn8sspmvyxrcdaqs0d6375wx";
+        })
       ];
     });
   };
