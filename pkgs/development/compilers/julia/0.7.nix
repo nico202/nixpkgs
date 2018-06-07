@@ -52,16 +52,12 @@ let
     sha256 = "06fw4liazpx5vf3am45q2pdiwrv0id7ckv7n6zmpml29x6vkzmkh";
   };
 
-  majorVersion = "0";
-  minorVersion = "7";
-  maintenanceVersion = "0";
-  version = "${majorVersion}.${minorVersion}.${maintenanceVersion}";
 in
 
 let
   majorVersion = "0";
-  minorVersion = "5";
-  maintenanceVersion = "2";
+  minorVersion = "7";
+  maintenanceVersion = "0";
   version = "${majorVersion}.${minorVersion}.${maintenanceVersion}";
 in stdenv.mkDerivation rec {
   pname = "julia";
