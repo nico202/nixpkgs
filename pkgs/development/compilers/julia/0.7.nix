@@ -9,20 +9,17 @@
 # standard library dependencies
 , curl, fftwSinglePrec, fftw, gmp, libgit2, mpfr, openlibm, openspecfun, pcre2
 # linear algebra
-, openblas, arpack, suitesparse
+, openblas, suitesparse
 # Darwin frameworks
 , CoreServices, ApplicationServices
 }:
 
 with stdenv.lib;
 
-# All dependencies must use the same OpenBLAS.
 let
-  arpack_ = arpack;
   suitesparse_ = suitesparse;
 in
 let
-  arpack = arpack_.override { inherit openblas; };
   suitesparse = suitesparse_.override { inherit openblas; };
 in
 
@@ -67,8 +64,8 @@ stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "JuliaLang";
     repo = "${pname}";
-    rev = "v${version}-alpha";
-    sha256 = "1w29knnkm841s84bkx0ksxr81j0xwpvz1vdxf4xcdk18v3wc2spc";
+    rev = "v${version}-beta";
+    sha256 = "13s9jdjigm4bqafgjmchzqzxc0cp674imflbn7yfavci2hb9sq5i";
   };
 
   prePatch = ''
@@ -92,7 +89,7 @@ stdenv.mkDerivation rec {
   '';
 
   buildInputs = [
-    arpack fftw fftwSinglePrec gmp libgit2 libunwind mpfr
+    fftw fftwSinglePrec gmp libgit2 libunwind mpfr
     pcre2.dev openblas openlibm openspecfun readline suitesparse utf8proc
     zlib llvm
   ]
@@ -131,7 +128,6 @@ stdenv.mkDerivation rec {
       "SUITESPARSE_LIB=-lsuitesparse"
       "SUITESPARSE_INC=-I${suitesparse}/include"
 
-      "USE_SYSTEM_ARPACK=1"
       "USE_SYSTEM_FFTW=1"
       "USE_SYSTEM_GMP=1"
       "USE_SYSTEM_LIBGIT2=1"
@@ -155,7 +151,7 @@ stdenv.mkDerivation rec {
   NIX_CFLAGS_COMPILE = [ "-fPIC" ];
 
   LD_LIBRARY_PATH = makeLibraryPath [
-    arpack fftw fftwSinglePrec gmp libgit2 mpfr openblas openlibm
+    fftw fftwSinglePrec gmp libgit2 mpfr openblas openlibm
     openspecfun pcre2 suitesparse llvm
   ];
 
